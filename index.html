@@ -4,14 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.3.1 PowerSync</title>
-<link rel="manifest" href="manifest.webmanifest?v=10.3.1">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=10.3.1">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=10.3.1">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=10.3.1">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LCexpress">
+<title>LCexpress v10.3 PowerSync</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
@@ -400,8 +395,61 @@ async function updateSyncStatus(){const el=$('syncStatus');if(!el)return;let st=
 async function mostrarEstadoCloud(){let st={pending:0,connected:false,hasSynced:false};try{st=await (await esperarCloud()).syncStatus()}catch{}$('cloudInfo').innerHTML=`<b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;$('cloudDlg').showModal()}
 window.addEventListener('online',()=>{updateSyncStatus();toast('Internet disponible. LCexpress continúa trabajando localmente y puede sincronizar.')});window.addEventListener('offline',()=>{updateSyncStatus();toast('Sin Internet. LCexpress sigue funcionando con la base local.')});
 
-async function loadAll(){productos=await getAllStore('productos');clientes=await getAllStore('clientes');pedidos=await getAllStore('pedidos');rutas=await getAllStore('rutas');const ss=await getAllStore('settings');settings=ss.find(x=>x.id==='config')||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1,clienteNumero:1,rutaNumero:1};if(!ss.length)await putStore('settings',settings);if(!productos.length){await replaceStore('productos',DATOS_INICIALES,true);productos=await getAllStore('productos')}activeRoute=rutas.find(r=>r.estado==='ABIERTA')||null}
-async function init(){getDeviceId();await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();llenarDepartamentos();actualizarRutasSugeridas();await updateSyncStatus();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})}
+async function esperarSincronizacionInicial(maxMs=15000){
+  if(!navigator.onLine)return false;
+  const c=await esperarCloud(),inicio=Date.now();
+  while(Date.now()-inicio<maxMs){
+    try{const st=await c.syncStatus();if(st.hasSynced)return true}catch{}
+    await new Promise(r=>setTimeout(r,250));
+  }
+  return false;
+}
+async function loadAll(opts={}){
+  productos=await getAllStore('productos');
+  clientes=await getAllStore('clientes');
+  pedidos=await getAllStore('pedidos');
+  rutas=await getAllStore('rutas');
+  const ss=await getAllStore('settings');
+  settings=ss.find(x=>x.id==='config')||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1,clienteNumero:1,rutaNumero:1};
+  let synced=false;try{synced=(await (await esperarCloud()).syncStatus()).hasSynced}catch{}
+  if(!ss.length && synced)await putStore('settings',settings);
+  // Solo sembrar el inventario original si PowerSync ya terminó la primera sincronización y el servidor está realmente vacío.
+  if(!productos.length && synced && opts.permitirSemilla!==false){await replaceStore('productos',DATOS_INICIALES,true);productos=await getAllStore('productos')}
+  activeRoute=rutas.find(r=>r.estado==='ABIERTA')||null;
+}
+let liveSyncStarted=false,liveSyncTimer=null,liveSyncBusy=false;
+function dialogoAbierto(id){const el=$(id);return !!(el&&el.open)}
+async function refrescarUIDesdePowerSync(){
+  if(liveSyncBusy)return;liveSyncBusy=true;
+  try{
+    await loadAll({permitirSemilla:false});
+    llenarFiltros();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();
+    if(dialogoAbierto('clientDlg'))renderClientes();
+    if(dialogoAbierto('routesHistoryDlg'))renderHistorialRutas();
+    if(dialogoAbierto('ordersHistoryDlg'))renderHistorialPedidos();
+    if(dialogoAbierto('clientPickDlg'))renderSelectorClientes();
+    await updateSyncStatus();
+  }catch(e){console.warn('No se pudo refrescar la interfaz desde PowerSync',e)}finally{liveSyncBusy=false}
+}
+function programarRefrescoPowerSync(){clearTimeout(liveSyncTimer);liveSyncTimer=setTimeout(refrescarUIDesdePowerSync,180)}
+async function activarActualizacionTiempoReal(){
+  if(liveSyncStarted)return;liveSyncStarted=true;
+  const c=await esperarCloud();
+  const tablas=['productos','clientes','rutas','pedidos','pedido_detalle','inventario_movimientos','configuracion'];
+  for(const tabla of tablas){
+    try{c.db.watch(`SELECT id FROM ${tabla}`,[],{onResult:programarRefrescoPowerSync,onError:e=>console.warn('Watch '+tabla,e)})}catch(e){console.warn('No se pudo activar watch para '+tabla,e)}
+  }
+  setInterval(()=>{if(navigator.onLine)programarRefrescoPowerSync()},5000);
+}
+async function init(){
+  getDeviceId();
+  await esperarSincronizacionInicial();
+  await loadAll();
+  llenarFiltros();renderProductos();actualizarRutaBar();llenarDepartamentos();actualizarRutasSugeridas();
+  await activarActualizacionTiempoReal();
+  await updateSyncStatus();
+  if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})
+}
 
 /* INVENTARIO */
 function productosFiltrados(){const q=$('q').value,c=$('fCaja').value,m=$('fMaleta').value,s=$('fStock').value;const base=productos.filter(p=>(!c||p.caja===c)&&(!m||p.maleta===m)&&(!s||(s==='con'?+p.cantidad>0:+p.cantidad===0)));return ordenarProductosPorBusqueda(base,q)}
@@ -541,7 +589,7 @@ function exportarPDF(){if(!window.jspdf){alert('La exportación PDF requiere con
 /* CONFIG, BACKUP, IMPORT */
 function abrirConfiguracion(){if(!exigirAdmin())return;$('cfgPedidoPrefijo').value=settings.pedidoPrefijo||'PED';$('cfgPedidoNumero').value=settings.pedidoNumero||1;$('configDlg').showModal()}
 async function guardarConfig(e){e.preventDefault();settings.pedidoPrefijo=$('cfgPedidoPrefijo').value.trim().toUpperCase()||'PED';settings.pedidoNumero=Math.max(1,+$('cfgPedidoNumero').value||1);await putStore('settings',settings);cerrarDlg('configDlg');toast('Configuración guardada')}
-async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:10,fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
+async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.4',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
 async function restaurarBackup(e){const f=e.target.files[0];if(!f)return;try{const b=JSON.parse(await f.text());if(b.app!=='LCexpress')throw 0;if(!confirm('¿Restaurar este backup? Se reemplazarán inventario, clientes, pedidos, rutas y configuración actuales.'))return;await replaceStore('productos',b.productos||[]);await replaceStore('clientes',b.clientes||[]);await replaceStore('pedidos',b.pedidos||[]);await replaceStore('rutas',b.rutas||[]);await replaceStore('settings',[b.settings||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1}]);await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();toast('Backup restaurado')}catch{alert('El archivo no es un backup válido de LCexpress.')}finally{e.target.value=''}}
 async function importarExcel(e){if(!exigirAdmin()){e.target.value='';return;}const f=e.target.files[0];if(!f||typeof XLSX==='undefined')return;const wb=XLSX.read(await f.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),pick=(r,names)=>{for(const k of Object.keys(r))if(names.includes(norm(k)))return r[k];return''};const list=rows.map((r,i)=>({id:'x'+Date.now()+i,codigo:txt(pick(r,['codigo','código'])),descripcion:txt(pick(r,['descripcion','descripción','producto'])).trim().toUpperCase(),cantidad:+pick(r,['cantidad','cant'])||0,precio:+pick(r,['precio','precio unitario'])||0,caja:txt(pick(r,['caja','cajas'])).toUpperCase(),maleta:txt(pick(r,['maleta'])).toUpperCase(),cantidadMaleta:+pick(r,['cantidad maleta','cantidad en maleta'])||0,categoria:txt(pick(r,['categoria','categoría'])||'GENERAL').toUpperCase(),notas:'',actualizado:new Date().toISOString()})).filter(p=>p.descripcion);if(!list.length){alert('No se reconocieron filas del Excel.');return}if(confirm(`Se encontraron ${list.length} productos. ¿Reemplazar el inventario actual?`)){await replaceStore('productos',list);productos=await getAllStore('productos');llenarFiltros();renderProductos();toast('Inventario importado')}e.target.value=''}
 async function reiniciarBase(){if(confirm('¿Restaurar solamente el inventario original? Clientes, pedidos y rutas no se modificarán.')){await replaceStore('productos',DATOS_INICIALES,true);productos=await getAllStore('productos');llenarFiltros();renderProductos();toast('Inventario original restaurado')}}
