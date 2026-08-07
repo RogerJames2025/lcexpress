@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10 PowerSync</title>
+<title>LCexpress v10.3 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -80,7 +80,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 <main class="wrap">
 <div class="routebar"><div><b>Ruta del día:</b> <span id="routeStatus" class="route-off">No iniciada</span></div><div id="routeTotals" class="muted"></div></div>
 <section class="toolbar">
-<input class="search" id="q" placeholder="Buscar producto por descripción, código, caja o maleta…" oninput="renderProductos()">
+<input class="search" id="q" placeholder="Buscar por una o varias palabras, código, caja o maleta…" autocomplete="off" autocapitalize="none" oninput="renderProductos()">
 <select id="fCaja" onchange="renderProductos()"><option value="">Todas las cajas</option></select>
 <select id="fMaleta" onchange="renderProductos()"><option value="">Todas las maletas</option></select>
 <select id="fStock" onchange="renderProductos()"><option value="">Todo el inventario</option><option value="con">Con existencia</option><option value="sin">Sin existencia</option></select>
@@ -146,7 +146,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 <input type="hidden" id="orderId">
 <div class="grid3"><div class="field"><label>Número de pedido</label><input id="orderNumber" readonly></div><div class="field"><label>Fecha</label><input id="orderDate" readonly></div><div class="field"><label>Ruta activa</label><input id="orderRoute" readonly></div></div>
 <div class="section-title">Agregar productos</div>
-<div class="searchbox" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px"><input id="orderProductSearch" placeholder="Buscar producto por descripción o código…" oninput="renderOrderProductSearch()"><button type="button" class="btn blue" onclick="abrirEscanerPedido()">📷 Escanear código</button></div>
+<div class="searchbox" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px"><input id="orderProductSearch" placeholder="Buscar por una o varias palabras o por código…" autocomplete="off" autocapitalize="none" oninput="renderOrderProductSearch()"><button type="button" class="btn blue" onclick="abrirEscanerPedido()">📷 Escanear código</button></div>
 <div id="orderProductResults" class="mini-list" style="max-height:220px"></div>
 <div class="section-title">Detalle del pedido</div>
 <div class="scroll"><table class="order-table"><thead><tr><th>Código</th><th>Descripción</th><th>Cant.</th><th>Precio manual</th><th>Subtotal</th><th></th></tr></thead><tbody id="orderItems"></tbody></table></div>
@@ -326,6 +326,49 @@ const CATALOGO=[{"departamento":"Ahuachapán","municipio":"Ahuachapán Centro","
 const DEPARTAMENTOS=[...new Set(CATALOGO.map(x=>x.departamento))];
 const DB='LCexpressDB',DBV=5;
 const $=id=>document.getElementById(id), txt=v=>String(v??''), norm=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+
+/* Búsqueda inteligente de productos: admite varias palabras, palabras en distinto orden y pequeñas diferencias de escritura. */
+function distanciaLevenshtein(a,b){
+  a=norm(a);b=norm(b);if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
+  const prev=Array.from({length:b.length+1},(_,i)=>i),cur=new Array(b.length+1);
+  for(let i=1;i<=a.length;i++){cur[0]=i;for(let j=1;j<=b.length;j++){const c=a[i-1]===b[j-1]?0:1;cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+c)}for(let j=0;j<=b.length;j++)prev[j]=cur[j]}
+  return prev[b.length];
+}
+function coincidenciaToken(token,texto){
+  if(!token)return 0;texto=norm(texto);if(!texto)return 0;
+  if(texto===token)return 120;
+  if(texto.startsWith(token))return 95;
+  if(texto.includes(token))return 80;
+  const palabras=texto.split(/[^a-z0-9]+/).filter(Boolean);
+  let mejor=0;
+  for(const w of palabras){
+    if(w===token)mejor=Math.max(mejor,110);
+    else if(w.startsWith(token)||token.startsWith(w))mejor=Math.max(mejor,90);
+    else if(token.length>=4&&w.length>=4){const d=distanciaLevenshtein(token,w);if(d===1)mejor=Math.max(mejor,68);else if(d===2&&token.length>=7)mejor=Math.max(mejor,52)}
+  }
+  return mejor;
+}
+function puntajeBusquedaProducto(p,consulta){
+  const q=norm(consulta).replace(/\s+/g,' ');if(!q)return 1;
+  const codigo=norm(p.codigo),descripcion=norm(p.descripcion),categoria=norm(p.categoria),caja=norm(p.caja),maleta=norm(p.maleta);
+  const todo=[codigo,descripcion,categoria,caja,maleta].filter(Boolean).join(' ');
+  let score=0;
+  if(codigo&&codigo===q)score+=2000;else if(codigo&&codigo.startsWith(q))score+=1300;else if(codigo&&codigo.includes(q))score+=900;
+  if(descripcion===q)score+=1500;else if(descripcion.startsWith(q))score+=900;else if(descripcion.includes(q))score+=650;
+  const tokens=q.split(' ').filter(Boolean);let encontrados=0;
+  for(const token of tokens){
+    const td=coincidenciaToken(token,descripcion),tc=coincidenciaToken(token,codigo),tg=coincidenciaToken(token,todo);
+    const mejor=Math.max(td,tc,tg);if(mejor>0){encontrados++;score+=mejor+(td?35:0)+(tc?60:0)}
+  }
+  if(tokens.length>1&&encontrados===tokens.length)score+=500+tokens.length*60;
+  else if(tokens.length>1&&encontrados>0)score+=encontrados*25-(tokens.length-encontrados)*120;
+  return score>0?score:-1;
+}
+function ordenarProductosPorBusqueda(lista,consulta){
+  const q=norm(consulta).replace(/\s+/g,' ');
+  if(!q)return [...lista].sort((a,b)=>txt(a.descripcion).localeCompare(txt(b.descripcion),'es',{sensitivity:'base'}));
+  return lista.map(p=>({p,score:puntajeBusquedaProducto(p,q)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||txt(a.p.descripcion).localeCompare(txt(b.p.descripcion),'es',{sensitivity:'base'})).map(x=>x.p);
+}
 const esc=s=>txt(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let productos=[],clientes=[],pedidos=[],rutas=[],settings={},seleccionadoId=null,activeRoute=null,currentOrderItems=[],currentOrderClient=null,currentOrderOriginal=null;
 
@@ -356,7 +399,7 @@ async function loadAll(){productos=await getAllStore('productos');clientes=await
 async function init(){getDeviceId();await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();llenarDepartamentos();actualizarRutasSugeridas();await updateSyncStatus();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})}
 
 /* INVENTARIO */
-function productosFiltrados(){const q=norm($('q').value),c=$('fCaja').value,m=$('fMaleta').value,s=$('fStock').value;return productos.filter(p=>(!q||[p.codigo,p.descripcion,p.caja,p.maleta,p.categoria].some(x=>norm(x).includes(q)))&&(!c||p.caja===c)&&(!m||p.maleta===m)&&(!s||(s==='con'?+p.cantidad>0:+p.cantidad===0))).sort((a,b)=>txt(a.descripcion).localeCompare(txt(b.descripcion),'es',{sensitivity:'base'}))}
+function productosFiltrados(){const q=$('q').value,c=$('fCaja').value,m=$('fMaleta').value,s=$('fStock').value;const base=productos.filter(p=>(!c||p.caja===c)&&(!m||p.maleta===m)&&(!s||(s==='con'?+p.cantidad>0:+p.cantidad===0)));return ordenarProductosPorBusqueda(base,q)}
 function renderProductos(){const list=productosFiltrados(),tbody=$('rows');if(seleccionadoId&&!list.some(p=>p.id===seleccionadoId))seleccionadoId=null;tbody.innerHTML=list.length?list.map(p=>`<tr class="${p.id===seleccionadoId?'selected':''}"><td class="selectcol"><input class="rowcheck" type="checkbox" ${p.id===seleccionadoId?'checked':''} onchange="seleccionarProducto('${p.id}',this.checked)"></td><td class="code">${esc(p.codigo)||'S/C'}</td><td><b>${esc(p.descripcion)}</b>${p.notas?`<br><small class="muted">${esc(p.notas)}</small>`:''}</td><td>${esc(p.categoria||'GENERAL')}</td><td class="qty">${+p.cantidad||0}</td><td>${money(p.precio)}</td><td><span class="tag">${esc(p.caja)||'Sin caja'}</span></td><td><span class="tag purple">${esc(p.maleta)||'Sin maleta'}${p.maleta?` · ${+p.cantidadMaleta||0} u.`:''}</span></td><td class="actionscol"><button class="rowbtn" onclick="seleccionarYEditar('${p.id}')" title="Editar">✏️</button><button class="rowbtn" onclick="seleccionarYEliminar('${p.id}')" title="Eliminar">🗑️</button></td></tr>`).join(''):`<tr><td colspan="9" class="empty">No se encontraron productos.</td></tr>`;$('sProductos').textContent=list.length;$('sUnidades').textContent=list.reduce((a,p)=>a+(+p.cantidad||0),0);$('sValor').textContent=money(list.reduce((a,p)=>a+(+p.cantidad||0)*(+p.precio||0),0));$('sUbicaciones').textContent=new Set(list.flatMap(p=>[p.caja,p.maleta]).filter(Boolean)).size;$('sClientes').textContent=clientes.length}
 function seleccionarProducto(id,on){seleccionadoId=on?id:null;renderProductos()}
 function productoSeleccionado(){return productos.find(p=>p.id===seleccionadoId)}
@@ -409,7 +452,7 @@ function renderSelectorClientes(){const list=clientesFiltrados('clientPickSearch
 function seleccionarClientePedido(id){const c=clientes.find(x=>x.id===id);if(!c)return;cerrarDlg('clientPickDlg');abrirPedidoNuevo(c)}
 function abrirPedidoNuevo(c){currentOrderClient=c;currentOrderItems=[];currentOrderOriginal=null;$('orderId').value='';$('orderNumber').value=formatPedido(settings.pedidoNumero||1);$('orderDate').value=new Date().toLocaleString('es-SV');$('orderRoute').value=activeRoute.nombre;$('orderCustomer').innerHTML=customerOrderHtml(c);$('orderProductSearch').value='';$('orderProductResults').innerHTML='';$('editReasonBox').style.display='none';renderOrderItems();$('orderTitle').textContent='Nuevo pedido';$('orderDlg').showModal()}
 function customerOrderHtml(c){return `<div><small>Cliente</small><b>${esc(c.nombre)} ${esc(c.apellido)}</b></div><div><small>Comercio</small><b>${esc(c.comercio||'—')}</b></div><div><small>Teléfono / Ruta</small><b>${esc(c.telefono)} · ${esc(c.ruta)}</b></div><div><small>Departamento</small><b>${esc(c.departamento)}</b></div><div><small>Municipio</small><b>${esc(c.municipio)}</b></div><div><small>Distrito</small><b>${esc(c.distrito)}</b></div>`}
-function renderOrderProductSearch(){const q=norm($('orderProductSearch').value);if(!q){$('orderProductResults').innerHTML='';return}const list=productos.filter(p=>norm(p.descripcion).includes(q)||norm(p.codigo).includes(q)).sort((a,b)=>pSort(a,b)).slice(0,40);$('orderProductResults').innerHTML=list.length?list.map(p=>`<div class="mini-item" onclick="agregarProductoPedido('${p.id}')"><b>${esc(p.descripcion)}</b><br><small>${esc(p.codigo)||'S/C'} · Existencia: ${+p.cantidad||0} · ${esc(p.caja||'')} ${esc(p.maleta||'')}</small></div>`).join(''):`<div class="empty">No se encontró el producto.</div>`}
+function renderOrderProductSearch(){const q=$('orderProductSearch').value;if(!norm(q)){$('orderProductResults').innerHTML='';return}const list=ordenarProductosPorBusqueda(productos,q).slice(0,40);$('orderProductResults').innerHTML=list.length?list.map(p=>`<div class="mini-item" onclick="agregarProductoPedido('${p.id}')"><b>${esc(p.descripcion)}</b><br><small>${esc(p.codigo)||'S/C'} · Existencia: ${+p.cantidad||0} · ${esc(p.caja||'')} ${esc(p.maleta||'')}</small></div>`).join(''):`<div class="empty">No se encontró el producto. Pruebe con una o dos palabras del nombre o con el código.</div>`}
 function pSort(a,b){return txt(a.descripcion).localeCompare(txt(b.descripcion),'es',{sensitivity:'base'})}
 function agregarProductoPedido(id){const p=productos.find(x=>x.id===id);if(!p)return;const ex=currentOrderItems.find(x=>x.productoId===id);if(ex)ex.cantidad+=1;else currentOrderItems.push({productoId:id,codigo:p.codigo,descripcion:p.descripcion,cantidad:1,precio:0});$('orderProductSearch').value='';$('orderProductResults').innerHTML='';renderOrderItems()}
 
