@@ -296,8 +296,24 @@ async function syncStatus() {
   };
 }
 
+// Sincronización manual incremental. PowerSync no vuelve a descargar toda la base:
+// mantiene su checkpoint y solicita únicamente los cambios posteriores. Del mismo modo,
+// uploadData() procesa únicamente las operaciones pendientes en ps_crud.
+async function syncNow({ timeoutMs = 12000 } = {}) {
+  await startPowerSync();
+  const before = await syncStatus();
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const st = await syncStatus();
+    const downloaded = st.lastSyncedAt && st.lastSyncedAt !== before.lastSyncedAt;
+    if (st.connected && st.pending === 0 && (downloaded || st.hasSynced)) return st;
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }
+  return syncStatus();
+}
+
 window.LCCloud = {
-  db, startPowerSync, getAll, put, del, replace, pendingCount, profile, syncStatus,
+  db, startPowerSync, getAll, put, del, replace, pendingCount, profile, syncStatus, syncNow,
   url: POWERSYNC_URL
 };
 window.dispatchEvent(new CustomEvent('lcexpress-cloud-ready'));

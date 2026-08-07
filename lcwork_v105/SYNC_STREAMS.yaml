@@ -1,0 +1,19 @@
+config:
+  edition: 3
+
+streams:
+  catalogo_general:
+    auto_subscribe: true
+    queries:
+      - SELECT * FROM productos
+      - SELECT * FROM clientes
+      - SELECT * FROM configuracion
+      - SELECT * FROM perfiles WHERE id = auth.user_id()
+
+  operaciones:
+    auto_subscribe: true
+    queries:
+      - SELECT * FROM rutas
+      - SELECT * FROM pedidos
+      - SELECT * FROM pedido_detalle
+      - SELECT * FROM inventario_movimientos
