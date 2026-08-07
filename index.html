@@ -41,6 +41,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
       <div class="field"><label>Correo</label><input id="loginEmail" type="email" autocomplete="username" required placeholder="usuario@correo.com"></div>
       <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Contraseña"></div>
       <button id="loginBtn" class="btn primary" type="submit">Iniciar sesión</button>
+      <button id="loginLogoutBtn" class="btn red" type="button" onclick="cerrarSesionForzada()" style="margin-top:8px">Cerrar sesión guardada en este dispositivo</button>
       <div id="loginMsg" class="login-msg"></div>
       <div class="login-offline">Después del primer inicio de sesión en este dispositivo, LCexpress conservará la sesión hasta que usted cierre sesión.</div>
     </form>
@@ -203,16 +204,38 @@ let authSession=null,currentProfile=null,appInitialized=false;
 function cachedProfileKey(uid){return 'lcexpress_profile_'+uid}
 function cacheProfile(p){if(p?.id)localStorage.setItem(cachedProfileKey(p.id),JSON.stringify(p))}
 function getCachedProfile(uid){try{return JSON.parse(localStorage.getItem(cachedProfileKey(uid))||'null')}catch{return null}}
+let ultimoErrorPerfil = '';
 function setLoginMsg(msg,type='error'){const e=document.getElementById('loginMsg');if(!e)return;e.textContent=msg;e.className='login-msg '+type}
 function clearLoginMsg(){const e=document.getElementById('loginMsg');if(e){e.textContent='';e.className='login-msg'}}
 function perfilNombre(p,session){const n=[p?.nombre,p?.apellido].filter(Boolean).join(' ').trim();return n||session?.user?.email||'Usuario'}
 function esAdmin(){return currentProfile?.rol==='ADMIN'}
 function exigirAdmin(){if(esAdmin())return true;alert('Esta función requiere permisos de administrador.');return false}
 function aplicarRolUI(){document.querySelectorAll('[data-admin-only]').forEach(el=>el.classList.toggle('hidden',!esAdmin()));document.getElementById('userPill')?.classList.remove('hidden');document.getElementById('userName').textContent=perfilNombre(currentProfile,authSession);document.getElementById('userRole').textContent=currentProfile?.rol||'USUARIO'}
-async function cargarPerfil(session,permitirCache=true){const uid=session?.user?.id;if(!uid)return null;if(navigator.onLine&&sb){try{const {data,error}=await sb.from('perfiles').select('id,nombre,apellido,email,rol,activo,vendedor_codigo').eq('id',uid).single();if(!error&&data){cacheProfile(data);return data}}catch(e){console.warn('Perfil online no disponible',e)}}return permitirCache?getCachedProfile(uid):null}
-async function autorizarSesion(session){if(!session)return false;const p=await cargarPerfil(session,true);if(!p){if(!navigator.onLine){setLoginMsg('No hay un perfil guardado en este dispositivo. Conéctese a Internet para validar este usuario por primera vez.','info')}else{setLoginMsg('El usuario inició sesión, pero no tiene un perfil LCexpress configurado.','error')}return false}if(p.activo===false){setLoginMsg('Este usuario está desactivado.','error');try{await sb.auth.signOut({scope:'local'})}catch{}return false}authSession=session;currentProfile=p;document.getElementById('loginGate').classList.add('hidden');aplicarRolUI();try{await (await esperarCloud()).startPowerSync()}catch(e){console.warn('PowerSync se iniciará cuando haya conexión',e)}if(!appInitialized){appInitialized=true;await init()}return true}
+async function cargarPerfil(session,permitirCache=true){
+  const uid=session?.user?.id;
+  ultimoErrorPerfil='';
+  if(!uid)return null;
+  if(navigator.onLine&&sb){
+    try{
+      const {data,error}=await sb.from('perfiles').select('id,nombre,apellido,email,rol,activo,vendedor_codigo').eq('id',uid).maybeSingle();
+      if(error){ultimoErrorPerfil=error.message||String(error);console.error('Error al consultar perfil LCexpress:',error)}
+      if(data){cacheProfile(data);return data}
+    }catch(e){ultimoErrorPerfil=e?.message||String(e);console.error('Perfil online no disponible',e)}
+  }
+  return permitirCache?getCachedProfile(uid):null;
+}
+async function autorizarSesion(session){if(!session)return false;const p=await cargarPerfil(session,true);if(!p){if(!navigator.onLine){setLoginMsg('No hay un perfil guardado en este dispositivo. Conéctese a Internet para validar este usuario por primera vez.','info')}else{setLoginMsg(ultimoErrorPerfil ? 'No se pudo leer el perfil LCexpress: '+ultimoErrorPerfil : 'El usuario inició sesión, pero no tiene un perfil LCexpress configurado.','error')}return false}if(p.activo===false){setLoginMsg('Este usuario está desactivado.','error');try{await sb.auth.signOut({scope:'local'})}catch{}return false}authSession=session;currentProfile=p;document.getElementById('loginGate').classList.add('hidden');aplicarRolUI();try{await (await esperarCloud()).startPowerSync()}catch(e){console.warn('PowerSync se iniciará cuando haya conexión',e)}if(!appInitialized){appInitialized=true;await init()}return true}
 async function iniciarSesion(e){e.preventDefault();clearLoginMsg();if(!navigator.onLine){setLoginMsg('Para iniciar sesión por primera vez necesita conexión a Internet. Si este usuario ya había iniciado sesión aquí, cierre y vuelva a abrir LCexpress.','info');return}if(!sb){setLoginMsg('No se pudo cargar el módulo de autenticación. Revise Internet y vuelva a abrir LCexpress.');return}const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='Validando…';try{const email=document.getElementById('loginEmail').value.trim();const password=document.getElementById('loginPassword').value;const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;document.getElementById('loginPassword').value='';if(!(await autorizarSesion(data.session))){await sb.auth.signOut({scope:'local'})}}catch(err){setLoginMsg('No se pudo iniciar sesión: '+(err?.message||'revise correo y contraseña.'))}finally{btn.disabled=false;btn.textContent='Iniciar sesión'}}
 async function bootstrapAuth(){if(!sb){setLoginMsg('No se pudo cargar Supabase Auth. Conéctese a Internet la primera vez para guardar el módulo en este dispositivo.','info');return}const {data}=await sb.auth.getSession();if(data?.session){if(await autorizarSesion(data.session))return}document.getElementById('loginGate').classList.remove('hidden')}
+async function cerrarSesionForzada(){
+  try{if(sb)await sb.auth.signOut({scope:'local'})}catch(e){console.warn(e)}
+  authSession=null;currentProfile=null;
+  try{Object.keys(localStorage).filter(k=>k.startsWith('lcexpress_profile_')).forEach(k=>localStorage.removeItem(k))}catch{}
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPassword').value='';
+  clearLoginMsg();
+  location.reload();
+}
 async function cerrarSesion(){if(!confirm('¿Desea cerrar sesión en este dispositivo? La próxima vez deberá ingresar su contraseña.'))return;try{if(sb)await sb.auth.signOut({scope:'local'})}catch(e){console.warn(e)}authSession=null;currentProfile=null;location.reload()}
 function mostrarMiUsuario(){document.getElementById('userInfo').innerHTML=`<div class="customer-head"><div><small>Usuario</small><b>${esc(perfilNombre(currentProfile,authSession))}</b></div><div><small>Correo</small><b>${esc(authSession?.user?.email||currentProfile?.email||'')}</b></div><div><small>Rol</small><b>${esc(currentProfile?.rol||'')}</b></div></div><p class="hint">La sesión permanece guardada en este dispositivo hasta que seleccione Cerrar sesión.</p>`;cerrarMenu();document.getElementById('userDlg').showModal()}
 function cerrarMenu(){document.getElementById('moreMenu')?.classList.remove('show')}

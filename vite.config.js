@@ -1,19 +1,16 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: './',
   build: {
-    outDir: "dist",
+    target: 'es2022',
+    outDir: 'dist',
     emptyOutDir: true
   },
-
   optimizeDeps: {
-    exclude: [
-      "@journeyapps/wa-sqlite",
-      "@powersync/web"
-    ]
+    exclude: ['@journeyapps/wa-sqlite', '@powersync/web']
   },
-
   worker: {
-    format: "es"
+    format: 'es'
   }
 });
