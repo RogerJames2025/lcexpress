@@ -114,11 +114,36 @@ let lastUploadSuccessAt = null;
 
 const connector = new LCConnector();
 let started = false;
+let connectPromise = null;
 
-export async function startPowerSync() {
+export async function startPowerSync({ forceReconnect = false } = {}) {
+  if (forceReconnect) {
+    try { await db.disconnect(); } catch (e) { console.warn('LCexpress: no se pudo desconectar PowerSync antes de reconectar', e); }
+    started = false;
+    connectPromise = null;
+  }
   if (started) return db;
-  started = true;
-  db.connect(connector);
+  if (connectPromise) {
+    await connectPromise;
+    return db;
+  }
+  connectPromise = (async () => {
+    try {
+      await db.connect(connector, {
+        // Reduce la espera después de una escritura, sin hacer descargas completas.
+        crudUploadThrottleMs: 350,
+        retryDelayMs: 2000
+      });
+      started = true;
+      return db;
+    } catch (e) {
+      started = false;
+      throw e;
+    } finally {
+      connectPromise = null;
+    }
+  })();
+  await connectPromise;
   return db;
 }
 
@@ -311,21 +336,39 @@ async function syncStatus() {
 // Sincronización manual incremental. PowerSync no vuelve a descargar toda la base:
 // mantiene su checkpoint y solicita únicamente los cambios posteriores. Del mismo modo,
 // uploadData() procesa únicamente las operaciones pendientes en ps_crud.
-async function syncNow({ timeoutMs = 12000 } = {}) {
-  await startPowerSync();
-  const before = await syncStatus();
+async function syncNow({ timeoutMs = 20000 } = {}) {
+  // Forzar una reconexión NO borra SQLite ni vuelve a descargar toda la base.
+  // PowerSync conserva su checkpoint y pide solo cambios posteriores; la reconexión
+  // también dispara uploadData() para vaciar ps_crud según la documentación oficial.
+  await startPowerSync({ forceReconnect: true });
   const startedAt = Date.now();
+  let previousPending = await pendingCount();
   while (Date.now() - startedAt < timeoutMs) {
     const st = await syncStatus();
-    const downloaded = st.lastSyncedAt && st.lastSyncedAt !== before.lastSyncedAt;
-    if (st.connected && st.pending === 0 && (downloaded || st.hasSynced)) return st;
-    await new Promise(resolve => setTimeout(resolve, 300));
+    if (st.pending === 0 && st.connected) return st;
+    if (st.pending < previousPending) previousPending = st.pending;
+    await new Promise(resolve => setTimeout(resolve, 350));
   }
   return syncStatus();
 }
 
+async function syncDiagnostics() {
+  const st = await syncStatus();
+  let firstPending = null;
+  try {
+    const rows = await db.getAll('SELECT id, tx_id, data FROM ps_crud ORDER BY id LIMIT 1');
+    firstPending = rows?.[0] || null;
+  } catch {}
+  return {
+    ...st,
+    started,
+    firstPending
+  };
+}
+
+
 window.LCCloud = {
-  db, startPowerSync, getAll, put, del, replace, pendingCount, profile, syncStatus, syncNow,
+  db, startPowerSync, getAll, put, del, replace, pendingCount, profile, syncStatus, syncNow, syncDiagnostics,
   url: POWERSYNC_URL
 };
 window.dispatchEvent(new CustomEvent('lcexpress-cloud-ready'));

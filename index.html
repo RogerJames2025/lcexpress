@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.6.3 PowerSync</title>
+<title>LCexpress v10.6.4 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -48,7 +48,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.6.3</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.6.4</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -394,7 +394,7 @@ function download(name,data,type){const a=document.createElement('a');a.href=URL
 function getDeviceId(){let id=localStorage.getItem('lcexpress_device_id');if(!id){id='DEV-'+crypto.randomUUID();localStorage.setItem('lcexpress_device_id',id)}return id}
 async function pendingSyncCount(){try{const c=await esperarCloud();return await c.pendingCount()}catch{return 0}}
 async function updateSyncStatus(){const el=$('syncStatus');if(!el)return;let st={pending:0,connected:false,hasSynced:false,online:navigator.onLine};try{st=await (await esperarCloud()).syncStatus()}catch{}const n=st.pending||0;if(!navigator.onLine){el.className='sync-pill offline';$('syncMain').textContent='SIN INTERNET';$('syncSub').textContent=n?`${n} cambio(s) pendiente(s)`:'Base local disponible';return}if(n){el.className='sync-pill pending';$('syncMain').textContent='SINCRONIZANDO';$('syncSub').textContent=`${n} cambio(s) pendiente(s)`;return}el.className='sync-pill online';$('syncMain').textContent=st.connected?'SINCRONIZADO':'EN LÍNEA';$('syncSub').textContent=st.hasSynced?'PowerSync al día':'Conectando con PowerSync'}
-async function mostrarEstadoCloud(){let st={pending:0,connected:false,hasSynced:false};try{st=await (await esperarCloud()).syncStatus()}catch{}$('cloudInfo').innerHTML=`<b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;$('cloudDlg').showModal()}
+async function mostrarEstadoCloud(){let st={pending:0,connected:false,hasSynced:false};try{const c=await esperarCloud();st=c.syncDiagnostics?await c.syncDiagnostics():await c.syncStatus()}catch(e){st.diagnosticError=String(e?.message||e)}$('cloudInfo').innerHTML=`<b>Versión:</b> v10.6.4<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;$('cloudDlg').showModal()}
 async function sincronizarAhora(){
   if(!navigator.onLine){toast('Sin Internet. Los cambios quedan guardados localmente y se sincronizarán al recuperar conexión.');await updateSyncStatus();return}
   const c=await esperarCloud();
@@ -492,7 +492,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
   });
-  navigator.serviceWorker.register('/sw.js?v=10.6.3',{updateViaCache:'none'}).then(reg=>{
+  navigator.serviceWorker.register('/sw.js?v=10.6.4',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
