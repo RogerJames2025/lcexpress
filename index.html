@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.5 PowerSync</title>
+<title>LCexpress v10.6.3 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -48,7 +48,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.6.3</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -462,29 +462,47 @@ async function init(){
   llenarFiltros();renderProductos();actualizarRutaBar();llenarDepartamentos();actualizarRutasSugeridas();
   await activarActualizacionTiempoReal();
   await updateSyncStatus();
-  async function actualizarAplicacion(){
-  if(!('serviceWorker' in navigator)){location.reload();return}
-  toast('Buscando una versión nueva…');
-  try{
-    const reg=await navigator.serviceWorker.getRegistration();
-    if(reg){
-      await reg.update();
-      if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
-    }
-    // Navigation is network-first in v10.6.2; force a fresh document request.
-    setTimeout(()=>location.reload(),600);
-  }catch(e){console.error(e);location.reload()}
 }
-if('serviceWorker'in navigator){
-  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__lcReloading){window.__lcReloading=true;location.reload()}});
-  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+
+// Global: callable from Más → Actualizar aplicación.
+async function actualizarAplicacion(){
+  toast('Buscando actualización…');
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){
+        await reg.update().catch(()=>{});
+        if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+      }
+    }
+    // Use a cache-busting navigation so even an older cache-first worker cannot return index.html viejo.
+    const u=new URL(location.href);
+    u.searchParams.set('lcupdate',Date.now().toString());
+    toast('Actualizando LCexpress…');
+    setTimeout(()=>location.replace(u.toString()),500);
+  }catch(e){
+    console.error('Error actualizando aplicación',e);
+    alert('No se pudo comprobar la actualización. Se intentará recargar desde Internet.');
+    location.reload();
+  }
+}
+window.actualizarAplicacion=actualizarAplicacion;
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
+  });
+  navigator.serviceWorker.register('/sw.js?v=10.6.3',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
-      w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){toast('Nueva versión disponible. Presiona “Actualizar aplicación”.')}})
+      w.addEventListener('statechange',()=>{
+        if(w.state==='installed'&&navigator.serviceWorker.controller){
+          toast('Nueva versión disponible. Presiona “Actualizar aplicación”.');
+        }
+      });
     });
-  }).catch(()=>{});
-}
+  }).catch(e=>console.warn('Service Worker',e));
 }
 
 /* INVENTARIO */

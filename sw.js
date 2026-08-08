@@ -1,4 +1,4 @@
-const CACHE='lcexpress-v10-6-2-20260808';
+const CACHE='lcexpress-v10-6-3-20260808';
 const CORE=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://cdn.tailwindcss.com',
@@ -33,7 +33,7 @@ self.addEventListener('fetch',event=>{
     // Network-first for the application shell so a new Git/Cloudflare deployment is seen immediately.
     event.respondWith((async()=>{
       try{
-        const fresh=await fetch(req,{cache:'no-store'});
+        const fresh=await fetch(req,{cache:'reload'});
         const cache=await caches.open(CACHE);
         cache.put('./index.html',fresh.clone());
         return fresh;
