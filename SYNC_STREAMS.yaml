@@ -8,7 +8,8 @@ streams:
       - SELECT * FROM productos
       - SELECT * FROM clientes
       - SELECT * FROM configuracion
-      - SELECT * FROM perfiles WHERE id = auth.user_id()
+      # Se sincronizan sólo datos operativos de vendedores activos; no correo/credenciales.
+      - SELECT id, nombre, apellido, rol, activo, vendedor_codigo, creado_en, actualizado FROM perfiles WHERE activo = true
 
   operaciones:
     auto_subscribe: true

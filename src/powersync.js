@@ -10,7 +10,7 @@ const productos = new Table({
 
 const clientes = new Table({
   codigo: column.text, nombre: column.text, apellido: column.text, telefono: column.text,
-  dui: column.text, comercio: column.text, ubicacion: column.text, comprobante: column.text,
+  dui: column.text, comercio: column.text, direccion: column.text, telefono2: column.text, correo: column.text, observacion: column.text, ubicacion: column.text, comprobante: column.text,
   departamento: column.text, municipio: column.text, distrito: column.text, ruta: column.text,
   actualizado: column.text, eliminado_en: column.text
 }, { indexes: { nombre: ['nombre'], telefono: ['telefono'], comercio: ['comercio'] } });
@@ -24,13 +24,13 @@ const pedidos = new Table({
   numero: column.text, fecha: column.text, cliente_id: column.text, cliente_nombre: column.text,
   cliente_comercio: column.text, cliente_telefono: column.text, departamento: column.text,
   municipio: column.text, distrito: column.text, cliente_ruta: column.text, ruta_id: column.text,
-  ruta_nombre: column.text, comprobante: column.text, total: column.real, items_total: column.real,
+  ruta_nombre: column.text, comprobante: column.text, cliente_direccion: column.text, cliente_telefono2: column.text, cliente_correo: column.text, total: column.real, items_total: column.real,
   modificado: column.integer, modificaciones: column.text, actualizado: column.text, eliminado_en: column.text
 }, { indexes: { fecha: ['fecha'], cliente: ['cliente_id'], ruta: ['ruta_id'] } });
 
 const pedido_detalle = new Table({
   pedido_id: column.text, producto_id: column.text, codigo: column.text, descripcion: column.text,
-  cantidad: column.real, precio: column.real, subtotal: column.real, actualizado: column.text, eliminado_en: column.text
+  cantidad: column.real, precio: column.real, subtotal: column.real, vendedor_id: column.text, vendedor_nombre: column.text, actualizado: column.text, eliminado_en: column.text
 }, { indexes: { pedido: ['pedido_id'], producto: ['producto_id'] } });
 
 const inventario_movimientos = new Table({
@@ -134,8 +134,8 @@ function productoToDb(r) {
 function clienteToApp(r) { return { ...r }; }
 function clienteToDb(r) {
   return {
-    codigo:r.codigo||'', nombre:r.nombre||'', apellido:r.apellido||'', telefono:r.telefono||'', dui:r.dui||null,
-    comercio:r.comercio||'', ubicacion:r.ubicacion||null, comprobante:r.comprobante||'RECIBO', departamento:r.departamento||'',
+    codigo:r.codigo||'', nombre:r.nombre||'', apellido:r.apellido||'', telefono:r.telefono||'', telefono2:r.telefono2||'', correo:r.correo||'', dui:r.dui||null,
+    comercio:r.comercio||'', direccion:r.direccion||'', observacion:r.observacion||'', ubicacion:r.ubicacion||null, comprobante:r.comprobante||'RECIBO', departamento:r.departamento||'',
     municipio:r.municipio||'', distrito:r.distrito||'', ruta:r.ruta||'', actualizado:r.actualizado||new Date().toISOString(), eliminado_en:r.eliminado_en||null
   };
 }
@@ -153,7 +153,7 @@ function settingsToDb(r) {
 function pedidoHeaderToApp(r) {
   return {
     id:r.id, numero:r.numero, fecha:r.fecha, clienteId:r.cliente_id, clienteNombre:r.cliente_nombre||'', clienteComercio:r.cliente_comercio||'',
-    clienteTelefono:r.cliente_telefono||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', clienteRuta:r.cliente_ruta||'',
+    clienteTelefono:r.cliente_telefono||'', clienteTelefono2:r.cliente_telefono2||'', clienteCorreo:r.cliente_correo||'', clienteDireccion:r.cliente_direccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', clienteRuta:r.cliente_ruta||'',
     rutaId:r.ruta_id, rutaNombre:r.ruta_nombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), itemsTotal:Number(r.items_total||0),
     modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), actualizado:r.actualizado, items:[]
   };
@@ -161,13 +161,13 @@ function pedidoHeaderToApp(r) {
 function pedidoHeaderToDb(r) {
   return {
     numero:r.numero, fecha:r.fecha||new Date().toISOString(), cliente_id:r.clienteId||null, cliente_nombre:r.clienteNombre||'', cliente_comercio:r.clienteComercio||'',
-    cliente_telefono:r.clienteTelefono||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', cliente_ruta:r.clienteRuta||'',
+    cliente_telefono:r.clienteTelefono||'', cliente_telefono2:r.clienteTelefono2||'', cliente_correo:r.clienteCorreo||'', cliente_direccion:r.clienteDireccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', cliente_ruta:r.clienteRuta||'',
     ruta_id:r.rutaId||null, ruta_nombre:r.rutaNombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), items_total:Number(r.itemsTotal||0),
     modificado:r.modificado?1:0, modificaciones:JSON.stringify(r.modificaciones||[]), actualizado:r.actualizado||new Date().toISOString(), eliminado_en:null
   };
 }
 function detalleToApp(r) {
-  return { detalleId:r.id, productoId:r.producto_id, codigo:r.codigo||'', descripcion:r.descripcion||'', cantidad:Number(r.cantidad||0), precio:Number(r.precio||0), subtotal:Number(r.subtotal||0) };
+  return { detalleId:r.id, productoId:r.producto_id, codigo:r.codigo||'', descripcion:r.descripcion||'', cantidad:Number(r.cantidad||0), precio:Number(r.precio||0), subtotal:Number(r.subtotal||0), vendedorId:r.vendedor_id||'', vendedorNombre:r.vendedor_nombre||'' };
 }
 
 async function exists(table, id, tx = db) {
@@ -212,7 +212,7 @@ async function putPedido(order) {
       keep.add(did);
       const data = {
         pedido_id:order.id, producto_id:item.productoId||null, codigo:item.codigo||'', descripcion:item.descripcion||'', cantidad:Number(item.cantidad||0),
-        precio:Number(item.precio||0), subtotal:Number(item.subtotal ?? (Number(item.cantidad||0)*Number(item.precio||0))), actualizado:now, eliminado_en:null
+        precio:Number(item.precio||0), subtotal:Number(item.subtotal ?? (Number(item.cantidad||0)*Number(item.precio||0))), vendedor_id:item.vendedorId||null, vendedor_nombre:item.vendedorNombre||'', actualizado:now, eliminado_en:null
       };
       await writeRecord('pedido_detalle', did, data, tx);
     }
@@ -231,6 +231,7 @@ async function getAll(store) {
     return s ? [s] : [];
   }
   if (store === 'inventario_movimientos') return await db.getAll('SELECT * FROM inventario_movimientos');
+  if (store === 'perfiles') return await db.getAll('SELECT * FROM perfiles WHERE activo = 1 OR activo = true');
   return [];
 }
 
