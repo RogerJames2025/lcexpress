@@ -43,6 +43,20 @@ const configuracion = new Table({
   ruta_numero: column.integer, actualizado: column.text
 });
 
+
+const categorias_producto = new Table({
+  nombre: column.text, activo: column.integer, orden: column.integer,
+  actualizado: column.text, eliminado_en: column.text
+}, { indexes: { nombre: ['nombre'] } });
+const cajas = new Table({
+  nombre: column.text, activo: column.integer, orden: column.integer,
+  actualizado: column.text, eliminado_en: column.text
+}, { indexes: { nombre: ['nombre'] } });
+const maletas = new Table({
+  nombre: column.text, activo: column.integer, orden: column.integer,
+  actualizado: column.text, eliminado_en: column.text
+}, { indexes: { nombre: ['nombre'] } });
+
 const perfiles = new Table({
   nombre: column.text, apellido: column.text, email: column.text, rol: column.text,
   activo: column.integer, vendedor_codigo: column.text, creado_en: column.text, actualizado: column.text
@@ -50,7 +64,7 @@ const perfiles = new Table({
 
 const AppSchema = new Schema({
   productos, clientes, rutas, pedidos, pedido_detalle,
-  inventario_movimientos, configuracion, perfiles
+  inventario_movimientos, configuracion, perfiles, categorias_producto, cajas, maletas
 });
 
 export const db = new PowerSyncDatabase({
@@ -265,6 +279,7 @@ async function getAll(store) {
   }
   if (store === 'inventario_movimientos') return await db.getAll('SELECT * FROM inventario_movimientos');
   if (store === 'perfiles') return await db.getAll('SELECT * FROM perfiles WHERE activo = 1 OR activo = true');
+  if (store === 'categorias_producto' || store === 'cajas' || store === 'maletas') return await db.getAll(`SELECT * FROM ${store} WHERE eliminado_en IS NULL OR eliminado_en = '' ORDER BY orden, nombre`);
   return [];
 }
 
@@ -274,6 +289,10 @@ async function put(store, obj) {
   if (store === 'rutas') return writeRecord('rutas', obj.id, rutaToDb(obj));
   if (store === 'pedidos') return putPedido(obj);
   if (store === 'settings') return writeRecord('configuracion', 'principal', settingsToDb(obj));
+  if (store === 'categorias_producto' || store === 'cajas' || store === 'maletas') {
+    const data = { nombre: obj.nombre || '', activo: obj.activo === false ? 0 : (obj.activo === 0 ? 0 : 1), orden: Number(obj.orden || 0), actualizado: obj.actualizado || new Date().toISOString(), eliminado_en: obj.eliminado_en || null };
+    return writeRecord(store, obj.id, data);
+  }
   if (store === 'inventario_movimientos') {
     const data = { ...obj }; delete data.id;
     return writeRecord('inventario_movimientos', obj.id, data);
@@ -299,7 +318,7 @@ async function replace(store, list) {
     return;
   }
   const table = store;
-  if (!['productos','clientes','rutas','pedidos','inventario_movimientos'].includes(table)) return;
+  if (!['productos','clientes','rutas','pedidos','inventario_movimientos','categorias_producto','cajas','maletas'].includes(table)) return;
   const existing = await getAll(store);
   const incoming = new Set(list.map(x=>x.id));
   for (const row of existing) if (!incoming.has(row.id)) await del(store,row.id);

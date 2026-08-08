@@ -8,6 +8,9 @@ streams:
       - SELECT * FROM productos
       - SELECT * FROM clientes
       - SELECT * FROM configuracion
+      - SELECT * FROM categorias_producto
+      - SELECT * FROM cajas
+      - SELECT * FROM maletas
       # Se sincronizan sólo datos operativos de vendedores activos; no correo/credenciales.
       - SELECT id, nombre, apellido, rol, activo, vendedor_codigo, creado_en, actualizado FROM perfiles WHERE activo = true
 
