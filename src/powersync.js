@@ -79,6 +79,7 @@ class LCConnector {
   }
 
   async uploadData(database) {
+    lastUploadAttemptAt = new Date().toISOString();
     const batch = await database.getCrudBatch();
     if (!batch) return;
     const sb = supabaseClient();
@@ -97,12 +98,19 @@ class LCConnector {
         }
       }
       await batch.complete();
+      lastUploadError = null;
+      lastUploadSuccessAt = new Date().toISOString();
     } catch (error) {
+      lastUploadError = String(error?.message || error || 'Error desconocido');
       console.error('LCexpress: cambios pendientes; PowerSync reintentará al reconectar.', error);
       throw error;
     }
   }
 }
+
+let lastUploadError = null;
+let lastUploadAttemptAt = null;
+let lastUploadSuccessAt = null;
 
 const connector = new LCConnector();
 let started = false;
@@ -293,7 +301,10 @@ async function syncStatus() {
     connected: !!status.connected,
     hasSynced: !!status.hasSynced,
     lastSyncedAt: status.lastSyncedAt || null,
-    online: navigator.onLine
+    online: navigator.onLine,
+    lastUploadError,
+    lastUploadAttemptAt,
+    lastUploadSuccessAt
   };
 }
 

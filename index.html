@@ -64,6 +64,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 <button data-admin-only onclick="abrirUsuariosAdmin()">👥 Usuarios</button>
 <button onclick="mostrarEstadoCloud()">☁️ Estado nube / sincronización</button>
 <button onclick="sincronizarAhora()">🔄 Sincronizar ahora</button>
+<button onclick="actualizarAplicacion()">⬆️ Actualizar aplicación</button>
 <button onclick="mostrarMiUsuario()">👤 Mi usuario</button>
 <button onclick="cerrarSesion()">🚪 Cerrar sesión</button>
 <button onclick="abrirHistorialPedidos()">🧾 Historial de pedidos</button>
@@ -393,13 +394,13 @@ function download(name,data,type){const a=document.createElement('a');a.href=URL
 function getDeviceId(){let id=localStorage.getItem('lcexpress_device_id');if(!id){id='DEV-'+crypto.randomUUID();localStorage.setItem('lcexpress_device_id',id)}return id}
 async function pendingSyncCount(){try{const c=await esperarCloud();return await c.pendingCount()}catch{return 0}}
 async function updateSyncStatus(){const el=$('syncStatus');if(!el)return;let st={pending:0,connected:false,hasSynced:false,online:navigator.onLine};try{st=await (await esperarCloud()).syncStatus()}catch{}const n=st.pending||0;if(!navigator.onLine){el.className='sync-pill offline';$('syncMain').textContent='SIN INTERNET';$('syncSub').textContent=n?`${n} cambio(s) pendiente(s)`:'Base local disponible';return}if(n){el.className='sync-pill pending';$('syncMain').textContent='SINCRONIZANDO';$('syncSub').textContent=`${n} cambio(s) pendiente(s)`;return}el.className='sync-pill online';$('syncMain').textContent=st.connected?'SINCRONIZADO':'EN LÍNEA';$('syncSub').textContent=st.hasSynced?'PowerSync al día':'Conectando con PowerSync'}
-async function mostrarEstadoCloud(){let st={pending:0,connected:false,hasSynced:false};try{st=await (await esperarCloud()).syncStatus()}catch{}$('cloudInfo').innerHTML=`<b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;$('cloudDlg').showModal()}
+async function mostrarEstadoCloud(){let st={pending:0,connected:false,hasSynced:false};try{st=await (await esperarCloud()).syncStatus()}catch{}$('cloudInfo').innerHTML=`<b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;$('cloudDlg').showModal()}
 async function sincronizarAhora(){
   if(!navigator.onLine){toast('Sin Internet. Los cambios quedan guardados localmente y se sincronizarán al recuperar conexión.');await updateSyncStatus();return}
   const c=await esperarCloud();
   toast('Sincronizando solo cambios pendientes y novedades…');
   try{
-    await c.syncNow({timeoutMs:12000});
+    await c.syncNow({timeoutMs:30000});
     await refrescarUIDesdePowerSync();
     const st=await c.syncStatus();
     toast(st.pending?`Quedan ${st.pending} cambio(s) pendientes; PowerSync continuará automáticamente.`:'Sincronización al día.');
@@ -461,7 +462,29 @@ async function init(){
   llenarFiltros();renderProductos();actualizarRutaBar();llenarDepartamentos();actualizarRutasSugeridas();
   await activarActualizacionTiempoReal();
   await updateSyncStatus();
-  if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})
+  async function actualizarAplicacion(){
+  if(!('serviceWorker' in navigator)){location.reload();return}
+  toast('Buscando una versión nueva…');
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(reg){
+      await reg.update();
+      if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+    }
+    // Navigation is network-first in v10.6.2; force a fresh document request.
+    setTimeout(()=>location.reload(),600);
+  }catch(e){console.error(e);location.reload()}
+}
+if('serviceWorker'in navigator){
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__lcReloading){window.__lcReloading=true;location.reload()}});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    reg.update().catch(()=>{});
+    reg.addEventListener('updatefound',()=>{
+      const w=reg.installing;if(!w)return;
+      w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){toast('Nueva versión disponible. Presiona “Actualizar aplicación”.')}})
+    });
+  }).catch(()=>{});
+}
 }
 
 /* INVENTARIO */
