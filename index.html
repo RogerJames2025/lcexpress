@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.6.7 PowerSync</title>
+<title>LCexpress v10.6.8 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -48,7 +48,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.6.7</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.6.8</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -62,7 +62,6 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 <div class="menu"><button class="btn ghost" onclick="toggleMenu()">☰ Más</button><div id="moreMenu" class="menucontent">
 <button data-admin-only onclick="abrirConfiguracion()">⚙️ Correlativos / configuración</button>
 <button data-admin-only onclick="abrirUsuariosAdmin()">👥 Usuarios</button>
-<button data-admin-only onclick="abrirCatalogos()">🗂️ Catálogos de productos</button>
 <button onclick="mostrarEstadoCloud()">☁️ Estado nube / sincronización</button>
 <button onclick="sincronizarAhora()">🔄 Sincronizar ahora</button>
 <button onclick="actualizarAplicacion()">⬆️ Actualizar aplicación</button>
@@ -102,10 +101,10 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 
 <!-- PRODUCTOS -->
 <dialog id="productDlg"><form onsubmit="guardarProducto(event)"><div class="modalhead"><b id="dlgTitle">Producto</b><button type="button" class="btn" onclick="cerrarDlg('productDlg')">×</button></div><div class="modalbody"><input type="hidden" id="pid"><div class="grid">
-<div class="field"><label>Código</label><input id="codigo"></div><div class="field"><label>Categoría</label><input id="categoria" list="categoriasProducto" autocomplete="off" placeholder="Escriba o seleccione…"><datalist id="categoriasProducto"></datalist></div>
+<div class="field"><label>Código</label><input id="codigo"></div><div class="field"><label>Categoría</label><input id="categoria" list="categoriasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="categoriasProducto"></datalist></div>
 <div class="field full"><label>Descripción *</label><input id="descripcion" required></div>
 <div class="field"><label>Cantidad total *</label><input id="cantidad" type="number" min="0" step="1" required></div><div class="field"><label>Precio de referencia</label><input id="precio" type="number" min="0" step="0.01"></div>
-<div class="field"><label>Caja</label><input id="caja" list="cajasProducto" autocomplete="off" placeholder="Escriba o seleccione…"><datalist id="cajasProducto"></datalist></div><div class="field"><label>Maleta</label><input id="maleta" list="maletasProducto" autocomplete="off" placeholder="Escriba o seleccione…"><datalist id="maletasProducto"></datalist></div>
+<div class="field"><label>Caja</label><input id="caja" list="cajasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="cajasProducto"></datalist></div><div class="field"><label>Maleta</label><input id="maleta" list="maletasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="maletasProducto"></datalist></div>
 <div class="field"><label>Cantidad en la maleta</label><input id="cantidadMaleta" type="number" min="0" step="1"></div><div class="field"><label>Notas</label><input id="notas"></div>
 </div><div class="modalfoot"><button type="button" class="btn" onclick="cerrarDlg('productDlg')">Cancelar</button><button class="btn primary">Guardar</button></div></div></form></dialog>
 
@@ -114,22 +113,6 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 <div class="field"><label>Movimiento</label><select id="ajTipo"><option value="sumar">Agregar</option><option value="restar">Disminuir</option><option value="fijar">Fijar cantidad exacta</option></select></div>
 <div class="field"><label>Cantidad</label><input id="ajCantidad" type="number" min="0" required></div>
 </div><div class="modalfoot"><button type="button" class="btn" onclick="cerrarDlg('adjustDlg')">Cancelar</button><button class="btn primary">Aplicar</button></div></div></form></dialog>
-
-<!-- CATÁLOGOS DE PRODUCTOS -->
-<dialog id="catalogDlg" class="wide"><div class="modalhead"><b>Catálogos de productos</b><button type="button" class="btn" onclick="cerrarDlg('catalogDlg')">×</button></div><div class="modalbody">
-<div class="grid3" style="margin-bottom:12px">
-  <div class="field"><label>Catálogo</label><select id="catalogType" onchange="cambiarCatalogo()"><option value="categorias_producto">Categorías</option><option value="cajas">Cajas</option><option value="maletas">Maletas</option></select></div>
-  <div class="field"><label>Buscar</label><input id="catalogSearch" placeholder="Buscar por nombre…" oninput="renderCatalogo()"></div>
-  <div class="field"><label>Mostrar</label><select id="catalogState" onchange="renderCatalogo()"><option value="activos">Activos</option><option value="todos">Todos</option><option value="inactivos">Inactivos</option></select></div>
-</div>
-<div class="card" style="padding:12px;margin-bottom:12px"><input type="hidden" id="catalogId"><input type="hidden" id="catalogOldName"><div class="grid3">
-  <div class="field"><label>Nombre</label><input id="catalogName" autocomplete="off" placeholder="Ej. BARBERÍA, CAJA #1, MALETA ROJA 1"></div>
-  <div class="field"><label>Orden</label><input id="catalogOrder" type="number" step="1" value="0"></div>
-  <div class="field"><label>Estado</label><select id="catalogActive"><option value="1">Activo</option><option value="0">Inactivo</option></select></div>
-</div><div class="modalfoot" style="margin-top:10px"><button type="button" class="btn" onclick="nuevoCatalogoItem()">Nuevo</button><button type="button" class="btn primary" onclick="guardarCatalogoItem()">Guardar</button><button type="button" class="btn purple" onclick="fusionarCatalogoItem()">Fusionar</button></div></div>
-<div class="scroll" style="max-height:48vh"><table style="min-width:760px"><thead><tr><th>Nombre</th><th>Orden</th><th>Estado</th><th>Productos usados</th><th>Acciones</th></tr></thead><tbody id="catalogRows"></tbody></table></div>
-<p class="hint">Al cambiar el nombre, LCexpress actualiza también los productos que usan ese valor. “Fusionar” mueve los productos del valor seleccionado hacia otro valor del mismo catálogo y deja el anterior inactivo. Un valor usado no se elimina físicamente; se desactiva para conservar historial.</p>
-</div></dialog>
 
 <!-- CLIENTES -->
 <dialog id="clientsDlg" class="xwide"><div class="modalhead"><b>Clientes</b><button type="button" class="btn" onclick="cerrarDlg('clientsDlg')">×</button></div><div class="modalbody">
@@ -393,8 +376,7 @@ function ordenarProductosPorBusqueda(lista,consulta){
   return lista.map(p=>({p,score:puntajeBusquedaProducto(p,q)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||txt(a.p.descripcion).localeCompare(txt(b.p.descripcion),'es',{sensitivity:'base'})).map(x=>x.p);
 }
 const esc=s=>txt(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-let productos=[],clientes=[],pedidos=[],rutas=[],settings={},perfilesVendedores=[],seleccionadoId=null,activeRoute=null,currentOrderItems=[],currentOrderClient=null,currentOrderOriginal=null;
-let catalogos={categorias_producto:[],cajas:[],maletas:[]};
+let productos=[],clientes=[],pedidos=[],rutas=[],settings={},perfilesVendedores=[],catalogCategorias=[],catalogCajas=[],catalogMaletas=[],seleccionadoId=null,activeRoute=null,currentOrderItems=[],currentOrderClient=null,currentOrderOriginal=null;
 
 function openDB(){return Promise.resolve(window.LCCloud?.db||null)}
 async function esperarCloud(){if(window.LCCloud)return window.LCCloud;await new Promise(resolve=>window.addEventListener('lcexpress-cloud-ready',resolve,{once:true}));return window.LCCloud}
@@ -416,7 +398,7 @@ function download(name,data,type){const a=document.createElement('a');a.href=URL
 function getDeviceId(){let id=localStorage.getItem('lcexpress_device_id');if(!id){id='DEV-'+crypto.randomUUID();localStorage.setItem('lcexpress_device_id',id)}return id}
 async function pendingSyncCount(){try{const c=await esperarCloud();return await c.pendingCount()}catch{return 0}}
 async function updateSyncStatus(){const el=$('syncStatus');if(!el)return;let st={pending:0,connected:false,hasSynced:false,online:navigator.onLine};try{st=await (await esperarCloud()).syncStatus()}catch{}const n=st.pending||0;if(!navigator.onLine){el.className='sync-pill offline';$('syncMain').textContent='SIN INTERNET';$('syncSub').textContent=n?`${n} cambio(s) pendiente(s)`:'Base local disponible';return}if(n){el.className='sync-pill pending';$('syncMain').textContent='SINCRONIZANDO';$('syncSub').textContent=`${n} cambio(s) pendiente(s)`;return}el.className='sync-pill online';$('syncMain').textContent=st.connected?'SINCRONIZADO':'EN LÍNEA';$('syncSub').textContent=st.hasSynced?'PowerSync al día':'Conectando con PowerSync'}
-async function mostrarEstadoCloud(){let st={pending:0,connected:false,hasSynced:false};try{const c=await esperarCloud();st=c.syncDiagnostics?await c.syncDiagnostics():await c.syncStatus()}catch(e){st.diagnosticError=String(e?.message||e)}$('cloudInfo').innerHTML=`<b>Versión:</b> v10.6.7<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;$('cloudDlg').showModal()}
+async function mostrarEstadoCloud(){let st={pending:0,connected:false,hasSynced:false};try{const c=await esperarCloud();st=c.syncDiagnostics?await c.syncDiagnostics():await c.syncStatus()}catch(e){st.diagnosticError=String(e?.message||e)}$('cloudInfo').innerHTML=`<b>Versión:</b> v10.6.8<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;$('cloudDlg').showModal()}
 async function sincronizarAhora(){
   if(!navigator.onLine){toast('Sin Internet. Los cambios quedan guardados localmente y se sincronizarán al recuperar conexión.');await updateSyncStatus();return}
   const c=await esperarCloud();
@@ -451,9 +433,9 @@ async function loadAll(opts={}){
   if(!ss.length && synced)await putStore('settings',settings);
   // Solo sembrar el inventario original si PowerSync ya terminó la primera sincronización y el servidor está realmente vacío.
   if(!productos.length && synced && opts.permitirSemilla!==false){await replaceStore('productos',DATOS_INICIALES,true);productos=await getAllStore('productos')}
-  try{catalogos.categorias_producto=await getAllStore('categorias_producto')}catch{catalogos.categorias_producto=[]}
-  try{catalogos.cajas=await getAllStore('cajas')}catch{catalogos.cajas=[]}
-  try{catalogos.maletas=await getAllStore('maletas')}catch{catalogos.maletas=[]}
+  try{catalogCategorias=(await getAllStore('categorias_producto')).filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogCategorias=[]}
+  try{catalogCajas=(await getAllStore('cajas')).filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogCajas=[]}
+  try{catalogMaletas=(await getAllStore('maletas')).filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogMaletas=[]}
   activeRoute=rutas.find(r=>r.estado==='ABIERTA')||null;
 }
 let liveSyncStarted=false,liveSyncTimer=null,liveSyncBusy=false;
@@ -475,7 +457,7 @@ function programarRefrescoPowerSync(){clearTimeout(liveSyncTimer);liveSyncTimer=
 async function activarActualizacionTiempoReal(){
   if(liveSyncStarted)return;liveSyncStarted=true;
   const c=await esperarCloud();
-  const tablas=['productos','clientes','rutas','pedidos','pedido_detalle','inventario_movimientos','configuracion','perfiles','categorias_producto','cajas','maletas'];
+  const tablas=['productos','clientes','rutas','pedidos','pedido_detalle','inventario_movimientos','configuracion','perfiles'];
   for(const tabla of tablas){
     try{c.db.watch(`SELECT id FROM ${tabla}`,[],{onResult:programarRefrescoPowerSync,onError:e=>console.warn('Watch '+tabla,e)})}catch(e){console.warn('No se pudo activar watch para '+tabla,e)}
   }
@@ -539,37 +521,37 @@ function seleccionarProducto(id,on){seleccionadoId=on?id:null;renderProductos()}
 function productoSeleccionado(){return productos.find(p=>p.id===seleccionadoId)}
 function exigirSeleccion(accion){const p=productoSeleccionado();if(!p){alert(`Debe seleccionar un producto primero para ${accion}.\n\nMarque el checkbox de la columna "Sel." del producto deseado.`);return null}return p}
 function llenarFiltros(){const kc=$('fCaja')?.value||'',km=$('fMaleta')?.value||'';if(!$('fCaja'))return;const boxes=uniqueSorted(productos.map(p=>p.caja)),bags=uniqueSorted(productos.map(p=>p.maleta));$('fCaja').innerHTML='<option value="">Todas las cajas</option>'+boxes.map(x=>`<option>${esc(x)}</option>`).join('');$('fMaleta').innerHTML='<option value="">Todas las maletas</option>'+bags.map(x=>`<option>${esc(x)}</option>`).join('');$('fCaja').value=kc;$('fMaleta').value=km}
-function catalogoActivo(tipo){return (catalogos[tipo]||[]).filter(x=>x.activo===true||x.activo===1).sort((a,b)=>(+a.orden||0)-(+b.orden||0)||txt(a.nombre).localeCompare(txt(b.nombre),'es',{sensitivity:'base'}))}
+function catalogoNombres(arr){return uniqueSorted((arr||[]).filter(x=>x&&x.nombre).map(x=>x.nombre))}
 function actualizarCatalogosProducto(){
- const fallback={categorias_producto:uniqueSorted(productos.map(p=>p.categoria||'GENERAL')),cajas:uniqueSorted(productos.map(p=>p.caja)),maletas:uniqueSorted(productos.map(p=>p.maleta))};
- const sets={categoriasProducto:catalogoActivo('categorias_producto').map(x=>x.nombre),cajasProducto:catalogoActivo('cajas').map(x=>x.nombre),maletasProducto:catalogoActivo('maletas').map(x=>x.nombre)};
- if(!sets.categoriasProducto.length)sets.categoriasProducto=fallback.categorias_producto;
- if(!sets.cajasProducto.length)sets.cajasProducto=fallback.cajas;
- if(!sets.maletasProducto.length)sets.maletasProducto=fallback.maletas;
- for(const [id,vals] of Object.entries(sets)){const el=$(id);if(el)el.innerHTML=uniqueSorted(vals).map(v=>`<option value="${esc(v)}"></option>`).join('')}
+  const sets={
+    categoriasProducto:catalogoNombres(catalogCategorias),
+    cajasProducto:catalogoNombres(catalogCajas),
+    maletasProducto:catalogoNombres(catalogMaletas)
+  };
+  for(const [id,vals] of Object.entries(sets)){const el=$(id);if(el)el.innerHTML=vals.map(v=>`<option value="${esc(v)}"></option>`).join('')}
 }
-
-function catalogoCampoProducto(tipo){return tipo==='categorias_producto'?'categoria':tipo==='cajas'?'caja':'maleta'}
-function catalogoEtiqueta(tipo){return tipo==='categorias_producto'?'Categoría':tipo==='cajas'?'Caja':'Maleta'}
-async function abrirCatalogos(){if(!exigirAdmin())return;await recargarCatalogos();nuevoCatalogoItem();renderCatalogo();$('catalogDlg').showModal()}
-async function recargarCatalogos(){for(const t of ['categorias_producto','cajas','maletas']){try{catalogos[t]=await getAllStore(t)}catch{catalogos[t]=[]}}actualizarCatalogosProducto()}
-function cambiarCatalogo(){nuevoCatalogoItem();renderCatalogo()}
-function catalogoUso(tipo,nombre){const campo=catalogoCampoProducto(tipo),n=norm(nombre);return productos.filter(p=>norm(p[campo])===n).length}
-function catalogoFiltrado(){const tipo=$('catalogType').value,q=norm($('catalogSearch').value),estado=$('catalogState').value;return (catalogos[tipo]||[]).filter(x=>{const act=x.activo===true||x.activo===1;if(estado==='activos'&&!act)return false;if(estado==='inactivos'&&act)return false;return !q||norm(x.nombre).includes(q)}).sort((a,b)=>(+a.orden||0)-(+b.orden||0)||txt(a.nombre).localeCompare(txt(b.nombre),'es',{sensitivity:'base'}))}
-function renderCatalogo(){const tipo=$('catalogType').value,rows=catalogoFiltrado();$('catalogRows').innerHTML=rows.length?rows.map(x=>{const act=x.activo===true||x.activo===1,uso=catalogoUso(tipo,x.nombre);return `<tr><td><b>${esc(x.nombre)}</b></td><td>${+x.orden||0}</td><td><span class="tag ${act?'green':'gray'}">${act?'Activo':'Inactivo'}</span></td><td>${uso}</td><td><button class="rowbtn" title="Editar" onclick="editarCatalogoItem('${x.id}')">✏️</button><button class="rowbtn" title="${act?'Desactivar':'Activar'}" onclick="toggleCatalogoItem('${x.id}')">${act?'⏸️':'▶️'}</button><button class="rowbtn" title="Eliminar" onclick="eliminarCatalogoItem('${x.id}')">🗑️</button></td></tr>`}).join(''):'<tr><td colspan="5" class="empty">No hay registros en este catálogo.</td></tr>'}
-function nuevoCatalogoItem(){$('catalogId').value='';$('catalogOldName').value='';$('catalogName').value='';$('catalogOrder').value=String(((catalogos[$('catalogType').value]||[]).reduce((m,x)=>Math.max(m,+x.orden||0),0))+1);$('catalogActive').value='1';$('catalogName').focus()}
-function editarCatalogoItem(id){const x=(catalogos[$('catalogType').value]||[]).find(v=>v.id===id);if(!x)return;$('catalogId').value=x.id;$('catalogOldName').value=x.nombre||'';$('catalogName').value=x.nombre||'';$('catalogOrder').value=+x.orden||0;$('catalogActive').value=(x.activo===true||x.activo===1)?'1':'0';$('catalogName').focus()}
-async function propagarNombreCatalogo(tipo,anterior,nuevo){if(!anterior||norm(anterior)===norm(nuevo))return;const campo=catalogoCampoProducto(tipo),afectados=productos.filter(p=>norm(p[campo])===norm(anterior));for(const p of afectados){p[campo]=nuevo;p.actualizado=new Date().toISOString();await putStore('productos',p)}if(afectados.length){productos=await getAllStore('productos');llenarFiltros();renderProductos()}}
-async function guardarCatalogoItem(){if(!exigirAdmin())return;const tipo=$('catalogType').value,nombre=$('catalogName').value.trim().toUpperCase();if(!nombre){alert('Ingrese un nombre.');return}const dup=(catalogos[tipo]||[]).find(x=>norm(x.nombre)===norm(nombre)&&x.id!==$('catalogId').value);if(dup){alert(`${catalogoEtiqueta(tipo)} ya existe: ${dup.nombre}`);return}const id=$('catalogId').value||idgen('cat'),anterior=$('catalogOldName').value;await putStore(tipo,{id,nombre,orden:+$('catalogOrder').value||0,activo:$('catalogActive').value==='1',actualizado:new Date().toISOString()});await propagarNombreCatalogo(tipo,anterior,nombre);await recargarCatalogos();nuevoCatalogoItem();renderCatalogo();toast(catalogoEtiqueta(tipo)+' guardada')}
-async function toggleCatalogoItem(id){if(!exigirAdmin())return;const tipo=$('catalogType').value,x=(catalogos[tipo]||[]).find(v=>v.id===id);if(!x)return;x.activo=!(x.activo===true||x.activo===1);x.actualizado=new Date().toISOString();await putStore(tipo,x);await recargarCatalogos();renderCatalogo();toast(x.activo?'Activado':'Desactivado')}
-async function eliminarCatalogoItem(id){if(!exigirAdmin())return;const tipo=$('catalogType').value,x=(catalogos[tipo]||[]).find(v=>v.id===id);if(!x)return;const uso=catalogoUso(tipo,x.nombre);if(uso){if(confirm(`${x.nombre} está usado por ${uso} producto(s).\n\nNo se eliminará para conservar el historial. ¿Desea desactivarlo?`)){x.activo=false;x.actualizado=new Date().toISOString();await putStore(tipo,x);await recargarCatalogos();renderCatalogo()}return}if(!confirm(`¿Eliminar ${x.nombre}?`))return;await delStore(tipo,id);await recargarCatalogos();renderCatalogo();toast('Registro eliminado')}
-async function fusionarCatalogoItem(){if(!exigirAdmin())return;const tipo=$('catalogType').value,id=$('catalogId').value;if(!id){alert('Seleccione primero el valor que desea fusionar.');return}const origen=(catalogos[tipo]||[]).find(x=>x.id===id);if(!origen)return;const candidatos=(catalogos[tipo]||[]).filter(x=>x.id!==id&&(x.activo===true||x.activo===1));if(!candidatos.length){alert('No hay otro valor activo para fusionar.');return}const lista=candidatos.map((x,i)=>`${i+1}. ${x.nombre}`).join('\n');const r=prompt(`Fusionar \"${origen.nombre}\" con:\n\n${lista}\n\nEscriba el número del destino:`);if(!r)return;const dest=candidatos[Number(r)-1];if(!dest){alert('Selección inválida.');return}if(!confirm(`Los productos con ${origen.nombre} pasarán a ${dest.nombre}. ¿Continuar?`))return;await propagarNombreCatalogo(tipo,origen.nombre,dest.nombre);origen.activo=false;origen.actualizado=new Date().toISOString();await putStore(tipo,origen);await recargarCatalogos();nuevoCatalogoItem();renderCatalogo();toast('Catálogo fusionado')}
-
+function valorCatalogoExacto(valor,arr){
+  const n=norm(valor);
+  const item=(arr||[]).find(x=>norm(x.nombre)===n);
+  return item?item.nombre:null;
+}
+function validarCatalogosProducto(){
+  const categoriaTxt=$('categoria').value.trim()||'GENERAL';
+  const cajaTxt=$('caja').value.trim();
+  const maletaTxt=$('maleta').value.trim();
+  const categoria=valorCatalogoExacto(categoriaTxt,catalogCategorias);
+  const caja=valorCatalogoExacto(cajaTxt,catalogCajas);
+  const maleta=maletaTxt?valorCatalogoExacto(maletaTxt,catalogMaletas):'';
+  if(!categoria){alert(`La categoría “${categoriaTxt}” no existe o está inactiva.\n\nSeleccione una categoría existente del catálogo.`);$('categoria').focus();return null}
+  if(!caja){alert(`La caja “${cajaTxt||'(vacía)'}” no existe o está inactiva.\n\nDebe seleccionar una caja existente del catálogo. Si necesita una nueva, créela primero en Más → Catálogos.`);$('caja').focus();return null}
+  if(maletaTxt&&!maleta){alert(`La maleta “${maletaTxt}” no existe o está inactiva.\n\nSeleccione una maleta existente del catálogo o deje el campo vacío si el producto no está en una maleta.`);$('maleta').focus();return null}
+  return {categoria,caja,maleta};
+}
 function nuevoProducto(){if(!exigirAdmin())return;['pid','codigo','categoria','descripcion','cantidad','precio','caja','maleta','cantidadMaleta','notas'].forEach(x=>$(x).value='');$('categoria').value='GENERAL';$('cantidad').value=0;$('precio').value=0;actualizarCatalogosProducto();$('dlgTitle').textContent='Nuevo producto';$('productDlg').showModal()}
 function editarSeleccionado(){if(!exigirAdmin())return;const p=exigirSeleccion('editarlo');if(p)editarProducto(p.id)}
 function seleccionarYEditar(id){if(!exigirAdmin())return;seleccionadoId=id;renderProductos();editarProducto(id)}
 function editarProducto(id){const p=productos.find(x=>x.id===id);if(!p)return;['codigo','categoria','descripcion','cantidad','precio','caja','maleta','cantidadMaleta','notas'].forEach(k=>$(k).value=p[k]??'');$('pid').value=p.id;actualizarCatalogosProducto();$('dlgTitle').textContent='Modificar producto';$('productDlg').showModal()}
-async function guardarProducto(e){e.preventDefault();const id=$('pid').value||idgen('p');const p={id,codigo:$('codigo').value.trim(),descripcion:$('descripcion').value.trim().toUpperCase(),categoria:($('categoria').value.trim()||'GENERAL').toUpperCase(),cantidad:+$('cantidad').value||0,precio:+$('precio').value||0,caja:$('caja').value.trim().toUpperCase(),maleta:$('maleta').value.trim().toUpperCase(),cantidadMaleta:+$('cantidadMaleta').value||0,notas:$('notas').value.trim(),actualizado:new Date().toISOString()};await putStore('productos',p);productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');toast('Producto guardado')}
+async function guardarProducto(e){e.preventDefault();const cat=validarCatalogosProducto();if(!cat)return;const id=$('pid').value||idgen('p');const p={id,codigo:$('codigo').value.trim(),descripcion:$('descripcion').value.trim().toUpperCase(),categoria:cat.categoria,cantidad:+$('cantidad').value||0,precio:+$('precio').value||0,caja:cat.caja,maleta:cat.maleta,cantidadMaleta:+$('cantidadMaleta').value||0,notas:$('notas').value.trim(),actualizado:new Date().toISOString()};await putStore('productos',p);productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');toast('Producto guardado')}
 function borrarSeleccionado(){if(!exigirAdmin())return;const p=exigirSeleccion('eliminarlo');if(p)borrarProducto(p.id)}
 function seleccionarYEliminar(id){if(!exigirAdmin())return;seleccionadoId=id;renderProductos();borrarProducto(id)}
 async function borrarProducto(id){const p=productos.find(x=>x.id===id);if(!p)return;if(!confirm(`¿Está seguro que quiere eliminar este producto?\n\n${p.descripcion}\nCódigo: ${p.codigo||'S/C'}\nCantidad: ${+p.cantidad||0}\n\nEsta acción no se puede deshacer.`))return;await delStore('productos',id);productos=await getAllStore('productos');seleccionadoId=null;llenarFiltros();renderProductos();toast('Producto eliminado')}
