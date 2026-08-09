@@ -11,7 +11,7 @@ const productos = new Table({
 const clientes = new Table({
   codigo: column.text, nombre: column.text, apellido: column.text, telefono: column.text,
   dui: column.text, comercio: column.text, direccion: column.text, telefono2: column.text, correo: column.text, observacion: column.text, ubicacion: column.text, comprobante: column.text,
-  departamento: column.text, municipio: column.text, distrito: column.text, ruta: column.text,
+  departamento: column.text, municipio: column.text, distrito: column.text, ruta: column.text, estado_comercial: column.text, fecha_cierre: column.text,
   actualizado: column.text, eliminado_en: column.text
 }, { indexes: { nombre: ['nombre'], telefono: ['telefono'], comercio: ['comercio'] } });
 
@@ -178,12 +178,12 @@ function productoToDb(r) {
     actualizado: r.actualizado || new Date().toISOString(), eliminado_en: r.eliminado_en || null
   };
 }
-function clienteToApp(r) { return { ...r }; }
+function clienteToApp(r) { return { ...r, estadoComercial:r.estado_comercial||'ACTIVO', fechaCierre:r.fecha_cierre||null }; }
 function clienteToDb(r) {
   return {
     codigo:r.codigo||'', nombre:r.nombre||'', apellido:r.apellido||'', telefono:r.telefono||'', telefono2:r.telefono2||'', correo:r.correo||'', dui:r.dui||null,
     comercio:r.comercio||'', direccion:r.direccion||'', observacion:r.observacion||'', ubicacion:r.ubicacion||null, comprobante:r.comprobante||'RECIBO', departamento:r.departamento||'',
-    municipio:r.municipio||'', distrito:r.distrito||'', ruta:r.ruta||'', actualizado:r.actualizado||new Date().toISOString(), eliminado_en:r.eliminado_en||null
+    municipio:r.municipio||'', distrito:r.distrito||'', ruta:r.ruta||'', estado_comercial:r.estadoComercial||r.estado_comercial||'ACTIVO', fecha_cierre:r.fechaCierre||r.fecha_cierre||null, actualizado:r.actualizado||new Date().toISOString(), eliminado_en:r.eliminado_en||null
   };
 }
 function rutaToApp(r) { return { ...r }; }
