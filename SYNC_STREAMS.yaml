@@ -11,8 +11,9 @@ streams:
       - SELECT * FROM categorias_producto
       - SELECT * FROM cajas
       - SELECT * FROM maletas
-      # Se sincronizan sólo datos operativos de vendedores activos; no correo/credenciales.
-      - SELECT id, nombre, apellido, rol, activo, vendedor_codigo, creado_en, actualizado FROM perfiles WHERE activo = true
+      # El correo se sincroniza para poder validar de forma segura la contraseña
+      # del administrador seleccionado sin pedir que escriba el correo.
+      - SELECT id, nombre, apellido, email, rol, activo, vendedor_codigo, creado_en, actualizado FROM perfiles WHERE activo = true
 
   operaciones:
     auto_subscribe: true
@@ -21,3 +22,5 @@ streams:
       - SELECT * FROM pedidos
       - SELECT * FROM pedido_detalle
       - SELECT * FROM inventario_movimientos
+      - SELECT * FROM inventarios
+      - SELECT * FROM inventario_detalle

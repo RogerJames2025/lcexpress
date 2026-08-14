@@ -25,7 +25,7 @@ const pedidos = new Table({
   cliente_comercio: column.text, cliente_telefono: column.text, departamento: column.text,
   municipio: column.text, distrito: column.text, cliente_ruta: column.text, ruta_id: column.text,
   ruta_nombre: column.text, comprobante: column.text, cliente_direccion: column.text, cliente_telefono2: column.text, cliente_correo: column.text, total: column.real, items_total: column.real,
-  modificado: column.integer, modificaciones: column.text, actualizado: column.text, eliminado_en: column.text
+  modificado: column.integer, modificaciones: column.text, efectivo_recibido: column.real, cambio: column.real, actualizado: column.text, eliminado_en: column.text
 }, { indexes: { fecha: ['fecha'], cliente: ['cliente_id'], ruta: ['ruta_id'] } });
 
 const pedido_detalle = new Table({
@@ -35,12 +35,13 @@ const pedido_detalle = new Table({
 
 const inventario_movimientos = new Table({
   producto_id: column.text, pedido_id: column.text, tipo: column.text, cantidad: column.real,
-  motivo: column.text, fecha: column.text, device_id: column.text, usuario_id: column.text, actualizado: column.text
+  motivo: column.text, fecha: column.text, device_id: column.text, usuario_id: column.text, actualizado: column.text,
+  referencia_id: column.text, autorizado_por_id: column.text, autorizado_por_nombre: column.text, origen: column.text
 });
 
 const configuracion = new Table({
   pedido_prefijo: column.text, pedido_numero: column.integer, cliente_numero: column.integer,
-  ruta_numero: column.integer, actualizado: column.text
+  ruta_numero: column.integer, inventario_numero: column.integer, actualizado: column.text
 });
 
 
@@ -57,6 +58,19 @@ const maletas = new Table({
   actualizado: column.text, eliminado_en: column.text
 }, { indexes: { nombre: ['nombre'] } });
 
+const inventarios = new Table({
+  numero: column.text, fecha_inicio: column.text, fecha_cierre: column.text, estado: column.text,
+  creado_por_id: column.text, creado_por_nombre: column.text, autorizado_por_id: column.text,
+  autorizado_por_nombre: column.text, autorizado_en: column.text, observacion: column.text,
+  total_productos: column.real, total_diferencias: column.real, actualizado: column.text
+}, { indexes: { estado: ['estado'], fecha: ['fecha_inicio'] } });
+
+const inventario_detalle = new Table({
+  inventario_id: column.text, producto_id: column.text, codigo: column.text, descripcion: column.text,
+  inventario_inicial: column.real, entradas: column.real, vendido: column.real, otras_salidas: column.real,
+  esperado: column.real, conteo_fisico: column.real, diferencia: column.real, actualizado: column.text
+}, { indexes: { inventario: ['inventario_id'], producto: ['producto_id'] } });
+
 const perfiles = new Table({
   nombre: column.text, apellido: column.text, email: column.text, rol: column.text,
   activo: column.integer, vendedor_codigo: column.text, creado_en: column.text, actualizado: column.text
@@ -64,7 +78,7 @@ const perfiles = new Table({
 
 const AppSchema = new Schema({
   productos, clientes, rutas, pedidos, pedido_detalle,
-  inventario_movimientos, configuracion, perfiles, categorias_producto, cajas, maletas
+  inventario_movimientos, inventarios, inventario_detalle, configuracion, perfiles, categorias_producto, cajas, maletas
 });
 
 export const db = new PowerSyncDatabase({
@@ -192,17 +206,17 @@ function rutaToDb(r) {
 }
 function settingsToApp(r) {
   if (!r) return null;
-  return { id:'config', pedidoPrefijo:r.pedido_prefijo||'PED', pedidoNumero:Number(r.pedido_numero||1), clienteNumero:Number(r.cliente_numero||1), rutaNumero:Number(r.ruta_numero||1), actualizado:r.actualizado };
+  return { id:'config', pedidoPrefijo:r.pedido_prefijo||'PED', pedidoNumero:Number(r.pedido_numero||1), clienteNumero:Number(r.cliente_numero||1), rutaNumero:Number(r.ruta_numero||1), inventarioNumero:Number(r.inventario_numero||1), actualizado:r.actualizado };
 }
 function settingsToDb(r) {
-  return { pedido_prefijo:r.pedidoPrefijo||'PED', pedido_numero:Number(r.pedidoNumero||1), cliente_numero:Number(r.clienteNumero||1), ruta_numero:Number(r.rutaNumero||1), actualizado:new Date().toISOString() };
+  return { pedido_prefijo:r.pedidoPrefijo||'PED', pedido_numero:Number(r.pedidoNumero||1), cliente_numero:Number(r.clienteNumero||1), ruta_numero:Number(r.rutaNumero||1), inventario_numero:Number(r.inventarioNumero||1), actualizado:new Date().toISOString() };
 }
 function pedidoHeaderToApp(r) {
   return {
     id:r.id, numero:r.numero, fecha:r.fecha, clienteId:r.cliente_id, clienteNombre:r.cliente_nombre||'', clienteComercio:r.cliente_comercio||'',
     clienteTelefono:r.cliente_telefono||'', clienteTelefono2:r.cliente_telefono2||'', clienteCorreo:r.cliente_correo||'', clienteDireccion:r.cliente_direccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', clienteRuta:r.cliente_ruta||'',
     rutaId:r.ruta_id, rutaNombre:r.ruta_nombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), itemsTotal:Number(r.items_total||0),
-    modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), actualizado:r.actualizado, items:[]
+    modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), efectivoRecibido:Number(r.efectivo_recibido||0), cambio:Number(r.cambio||0), actualizado:r.actualizado, items:[]
   };
 }
 function pedidoHeaderToDb(r) {
@@ -210,7 +224,7 @@ function pedidoHeaderToDb(r) {
     numero:r.numero, fecha:r.fecha||new Date().toISOString(), cliente_id:r.clienteId||null, cliente_nombre:r.clienteNombre||'', cliente_comercio:r.clienteComercio||'',
     cliente_telefono:r.clienteTelefono||'', cliente_telefono2:r.clienteTelefono2||'', cliente_correo:r.clienteCorreo||'', cliente_direccion:r.clienteDireccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', cliente_ruta:r.clienteRuta||'',
     ruta_id:r.rutaId||null, ruta_nombre:r.rutaNombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), items_total:Number(r.itemsTotal||0),
-    modificado:r.modificado?1:0, modificaciones:JSON.stringify(r.modificaciones||[]), actualizado:r.actualizado||new Date().toISOString(), eliminado_en:null
+    modificado:r.modificado?1:0, modificaciones:JSON.stringify(r.modificaciones||[]), efectivo_recibido:Number(r.efectivoRecibido||0), cambio:Number(r.cambio||0), actualizado:r.actualizado||new Date().toISOString(), eliminado_en:null
   };
 }
 function detalleToApp(r) {
@@ -278,6 +292,8 @@ async function getAll(store) {
     return s ? [s] : [];
   }
   if (store === 'inventario_movimientos') return await db.getAll('SELECT * FROM inventario_movimientos');
+  if (store === 'inventarios') return await db.getAll('SELECT * FROM inventarios ORDER BY fecha_inicio DESC');
+  if (store === 'inventario_detalle') return await db.getAll('SELECT * FROM inventario_detalle');
   if (store === 'perfiles') return await db.getAll('SELECT * FROM perfiles WHERE activo = 1 OR activo = true');
   if (store === 'categorias_producto' || store === 'cajas' || store === 'maletas') return await db.getAll(`SELECT * FROM ${store} WHERE eliminado_en IS NULL OR eliminado_en = '' ORDER BY orden, nombre`);
   return [];
@@ -293,9 +309,9 @@ async function put(store, obj) {
     const data = { nombre: obj.nombre || '', activo: obj.activo === false ? 0 : (obj.activo === 0 ? 0 : 1), orden: Number(obj.orden || 0), actualizado: obj.actualizado || new Date().toISOString(), eliminado_en: obj.eliminado_en || null };
     return writeRecord(store, obj.id, data);
   }
-  if (store === 'inventario_movimientos') {
+  if (store === 'inventario_movimientos' || store === 'inventarios' || store === 'inventario_detalle') {
     const data = { ...obj }; delete data.id;
-    return writeRecord('inventario_movimientos', obj.id, data);
+    return writeRecord(store, obj.id, data);
   }
 }
 
@@ -318,7 +334,7 @@ async function replace(store, list) {
     return;
   }
   const table = store;
-  if (!['productos','clientes','rutas','pedidos','inventario_movimientos','categorias_producto','cajas','maletas'].includes(table)) return;
+  if (!['productos','clientes','rutas','pedidos','inventario_movimientos','inventarios','inventario_detalle','categorias_producto','cajas','maletas'].includes(table)) return;
   const existing = await getAll(store);
   const incoming = new Set(list.map(x=>x.id));
   for (const row of existing) if (!incoming.has(row.id)) await del(store,row.id);
