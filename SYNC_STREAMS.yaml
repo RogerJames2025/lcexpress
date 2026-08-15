@@ -5,7 +5,7 @@ streams:
   catalogo_general:
     auto_subscribe: true
     queries:
-      - SELECT * FROM productos
+      - SELECT * FROM productos WHERE eliminado_en IS NULL
       - SELECT * FROM clientes
       - SELECT * FROM configuracion
       - SELECT * FROM categorias_producto
@@ -24,3 +24,4 @@ streams:
       - SELECT * FROM inventario_movimientos
       - SELECT * FROM inventarios
       - SELECT * FROM inventario_detalle
+      - SELECT * FROM inventario_participantes

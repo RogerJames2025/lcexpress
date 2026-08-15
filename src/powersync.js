@@ -68,8 +68,14 @@ const inventarios = new Table({
 const inventario_detalle = new Table({
   inventario_id: column.text, producto_id: column.text, codigo: column.text, descripcion: column.text,
   inventario_inicial: column.real, entradas: column.real, vendido: column.real, otras_salidas: column.real,
-  esperado: column.real, conteo_fisico: column.real, diferencia: column.real, actualizado: column.text
+  esperado: column.real, conteo_fisico: column.real, diferencia: column.real,
+  contado_por_id: column.text, contado_por_nombre: column.text, contado_device_id: column.text, contado_en: column.text, actualizado: column.text
 }, { indexes: { inventario: ['inventario_id'], producto: ['producto_id'] } });
+
+const inventario_participantes = new Table({
+  inventario_id: column.text, usuario_id: column.text, nombre: column.text, device_id: column.text,
+  ultimo_latido: column.text, activo: column.integer, actualizado: column.text
+}, { indexes: { inventario: ['inventario_id'], usuario: ['usuario_id'] } });
 
 const perfiles = new Table({
   nombre: column.text, apellido: column.text, email: column.text, rol: column.text,
@@ -78,7 +84,7 @@ const perfiles = new Table({
 
 const AppSchema = new Schema({
   productos, clientes, rutas, pedidos, pedido_detalle,
-  inventario_movimientos, inventarios, inventario_detalle, configuracion, perfiles, categorias_producto, cajas, maletas
+  inventario_movimientos, inventarios, inventario_detalle, inventario_participantes, configuracion, perfiles, categorias_producto, cajas, maletas
 });
 
 export const db = new PowerSyncDatabase({
@@ -121,8 +127,20 @@ class LCConnector {
           const { error } = await table.update(op.opData || {}).eq('id', op.id);
           if (error) throw error;
         } else if (op.op === UpdateType.DELETE) {
-          const { error } = await table.delete().eq('id', op.id);
-          if (error) throw error;
+          // PRODUCTOS: nunca borrar físicamente. Los productos pueden estar referenciados
+          // por pedidos, movimientos e inventarios históricos. Convertimos incluso los
+          // DELETE antiguos que ya estén en ps_crud a una baja lógica para desbloquear
+          // automáticamente colas pendientes de versiones anteriores.
+          if (op.table === 'productos') {
+            const { error } = await table.update({
+              eliminado_en: new Date().toISOString(),
+              actualizado: new Date().toISOString()
+            }).eq('id', op.id);
+            if (error) throw error;
+          } else {
+            const { error } = await table.delete().eq('id', op.id);
+            if (error) throw error;
+          }
         }
       }
       await batch.complete();
@@ -294,6 +312,7 @@ async function getAll(store) {
   if (store === 'inventario_movimientos') return await db.getAll('SELECT * FROM inventario_movimientos');
   if (store === 'inventarios') return await db.getAll('SELECT * FROM inventarios ORDER BY fecha_inicio DESC');
   if (store === 'inventario_detalle') return await db.getAll('SELECT * FROM inventario_detalle');
+  if (store === 'inventario_participantes') return await db.getAll('SELECT * FROM inventario_participantes');
   if (store === 'perfiles') return await db.getAll('SELECT * FROM perfiles WHERE activo = 1 OR activo = true');
   if (store === 'categorias_producto' || store === 'cajas' || store === 'maletas') return await db.getAll(`SELECT * FROM ${store} WHERE eliminado_en IS NULL OR eliminado_en = '' ORDER BY orden, nombre`);
   return [];
@@ -309,7 +328,7 @@ async function put(store, obj) {
     const data = { nombre: obj.nombre || '', activo: obj.activo === false ? 0 : (obj.activo === 0 ? 0 : 1), orden: Number(obj.orden || 0), actualizado: obj.actualizado || new Date().toISOString(), eliminado_en: obj.eliminado_en || null };
     return writeRecord(store, obj.id, data);
   }
-  if (store === 'inventario_movimientos' || store === 'inventarios' || store === 'inventario_detalle') {
+  if (store === 'inventario_movimientos' || store === 'inventarios' || store === 'inventario_detalle' || store === 'inventario_participantes') {
     const data = { ...obj }; delete data.id;
     return writeRecord(store, obj.id, data);
   }
@@ -334,7 +353,7 @@ async function replace(store, list) {
     return;
   }
   const table = store;
-  if (!['productos','clientes','rutas','pedidos','inventario_movimientos','inventarios','inventario_detalle','categorias_producto','cajas','maletas'].includes(table)) return;
+  if (!['productos','clientes','rutas','pedidos','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','categorias_producto','cajas','maletas'].includes(table)) return;
   const existing = await getAll(store);
   const incoming = new Set(list.map(x=>x.id));
   for (const row of existing) if (!incoming.has(row.id)) await del(store,row.id);
