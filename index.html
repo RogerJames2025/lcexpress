@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.8.5 PowerSync</title>
+<title>LCexpress v10.8.6 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -48,7 +48,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.8.5</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.8.6</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -622,7 +622,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
   });
-  navigator.serviceWorker.register('/sw.js?v=10.8.5',{updateViaCache:'none'}).then(reg=>{
+  navigator.serviceWorker.register('/sw.js?v=10.8.6',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
@@ -698,6 +698,49 @@ function abrirAjusteProducto(pid,{motivo='',autorizacion=null,desdePedido=false}
 async function guardarAjuste(e){e.preventDefault();if(inventarioEnCurso()){alert('No se pueden realizar ajustes mientras existe una toma de inventario abierta.');return}if(!esAdmin()&&!ajusteAutorizadoContext){alert('Se requiere autorización de administrador.');return}const p=productos.find(x=>x.id===$('ajProducto').value),n=+$('ajCantidad').value||0,t=$('ajTipo').value,motivo=txt($('ajMotivo').value).trim();if(!p||!motivo)return;const antes=+p.cantidad||0;const despues=t==='sumar'?antes+n:t==='restar'?Math.max(0,antes-n):n;const delta=despues-antes;p.cantidad=despues;if(+p.cantidadMaleta>despues)p.cantidadMaleta=despues;p.actualizado=new Date().toISOString();await putStore('productos',p);if(delta)await registrarMovimientoInventario({producto:p,tipo:ajusteAutorizadoContext?'AUTORIZACION_STOCK':'AJUSTE_MANUAL',cantidad:delta,motivo,autorizacion:ajusteAutorizadoContext});productos=await getAllStore('productos');inventarioMovimientos=await getAllStore('inventario_movimientos');renderProductos();cerrarDlg('adjustDlg');toast('Cantidad actualizada y movimiento registrado');const ctx=ajusteAutorizadoContext;ajusteAutorizadoContext=null;if(ctx?.desdePedido&&despues>0){setTimeout(()=>agregarProductoPedido(p.id,{skipStockCheck:true}),100)}}
 function stockDisponibleParaPedido(pid){const p=productos.find(x=>x.id===pid);if(!p)return 0;let disp=+p.cantidad||0;if(currentOrderOriginal){const old=(currentOrderOriginal.items||[]).find(i=>i.productoId===pid);disp+=+old?.cantidad||0}return disp}
 async function autorizarAjusteDesdePedido(pid){if(!navigator.onLine){alert('La autorización de un administrador requiere Internet para validar la contraseña. El pedido permanece abierto y puede continuar con otros productos.');return}const auth=await solicitarAutorizacionAdmin('Autorizar ajuste de producto sin existencia');if(!auth)return;abrirAjusteProducto(pid,{motivo:'Autorización para reponer existencia y continuar pedido',autorizacion:auth,desdePedido:true})}
+
+function abrirGoogleMapsCoordenadas(valor){
+  const v=txt(valor).trim();
+  if(!v){alert('Este cliente todavía no tiene coordenadas GPS guardadas.');return}
+  const m=v.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,; ]\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if(!m){alert('Las coordenadas no tienen un formato válido. Use: latitud,longitud');return}
+  const lat=Number(m[1]), lon=Number(m[2]);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat<-90||lat>90||lon<-180||lon>180){alert('Las coordenadas están fuera del rango válido.');return}
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat+','+lon)}`,'_blank','noopener,noreferrer');
+}
+async function capturarGPS(){
+  const input=$('cliUbicacion');
+  if(!input)return;
+  if(!window.isSecureContext){alert('La ubicación GPS requiere una conexión segura HTTPS. Abra LCexpress desde su dirección https://...');return}
+  if(!('geolocation' in navigator)){alert('Este dispositivo o navegador no ofrece acceso a ubicación GPS. Puede ingresar las coordenadas manualmente.');return}
+  const original=input.placeholder;
+  input.placeholder='Obteniendo ubicación…';
+  try{
+    if(navigator.permissions?.query){
+      try{
+        const st=await navigator.permissions.query({name:'geolocation'});
+        if(st.state==='denied'){
+          alert('El permiso de ubicación está bloqueado para LCexpress. Habilite Ubicación para este sitio/app en los permisos del navegador o de Android y vuelva a intentar.');
+          return;
+        }
+      }catch{}
+    }
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat=Number(pos.coords.latitude).toFixed(6);
+      const lon=Number(pos.coords.longitude).toFixed(6);
+      input.value=`${lat},${lon}`;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      toast(`Ubicación GPS obtenida · precisión ±${Math.round(pos.coords.accuracy||0)} m`);
+      input.placeholder=original;
+    },err=>{
+      input.placeholder=original;
+      const mensajes={1:'Permiso de ubicación denegado. Habilite la ubicación para LCexpress en los permisos del dispositivo/navegador.',2:'No fue posible determinar la ubicación. Verifique que el GPS/Ubicación del dispositivo esté activado.',3:'La ubicación tardó demasiado en responder. Muévase a un lugar con mejor señal GPS e intente nuevamente.'};
+      alert(mensajes[err.code]||('No se pudo obtener la ubicación GPS: '+(err.message||'error desconocido')));
+    },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  }finally{
+    setTimeout(()=>{if(input.placeholder==='Obteniendo ubicación…')input.placeholder=original},21000);
+  }
+}
 
 function abrirGoogleMapsCliente(id){const c=clientes.find(x=>x.id===id);if(c)abrirGoogleMapsCoordenadas(c.ubicacion)}
 
