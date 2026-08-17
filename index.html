@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.8.4 PowerSync</title>
+<title>LCexpress v10.8.5 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -48,7 +48,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.8.4</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.8.5</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -622,7 +622,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
   });
-  navigator.serviceWorker.register('/sw.js?v=10.8.4',{updateViaCache:'none'}).then(reg=>{
+  navigator.serviceWorker.register('/sw.js?v=10.8.5',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
@@ -702,7 +702,7 @@ async function autorizarAjusteDesdePedido(pid){if(!navigator.onLine){alert('La a
 function abrirGoogleMapsCliente(id){const c=clientes.find(x=>x.id===id);if(c)abrirGoogleMapsCoordenadas(c.ubicacion)}
 
 
-/* DIVISIÓN TERRITORIAL DE CLIENTES — restaurado v10.8.4 */
+/* DIVISIÓN TERRITORIAL DE CLIENTES — restaurado v10.8.5 */
 function llenarDepartamentos(){
   if(!$('cliDepartamento'))return;
   $('cliDepartamento').innerHTML='<option value="">Seleccione…</option>'+DEPARTAMENTOS.map(x=>`<option>${esc(x)}</option>`).join('');
@@ -875,7 +875,7 @@ function abrirCobroPedido(){if(!validarPedidoParaCobro())return;const total=curr
 function ponerCobroExacto(){$('payReceived').value=formatMoneyInput(paymentContext?.total||0);actualizarCambioCobro();$('payReceived').focus();$('payReceived').select()}
 function actualizarCambioCobro(){const total=paymentContext?.total||0,rec=parseMoneyInput($('payReceived')?.value),cambio=rec-total,ok=rec>=total;$('payChange').textContent=money(Math.max(0,cambio));$('payChange').style.color=ok?'#047857':'#b91c1c';$('payShort').textContent=ok?'':'Faltan '+money(Math.max(0,-cambio));$('payAcceptBtn').disabled=!ok}
 async function confirmarCobroPedido(){const rec=parseMoneyInput($('payReceived').value),total=paymentContext?.total||0;if(rec<total){alert('El dinero recibido es menor al monto a cobrar.');return}$('payReceived').value=formatMoneyInput(rec);cerrarDlg('paymentDlg');await guardarPedidoFinal(rec,Math.max(0,rec-total))}
-async function guardarPedidoFinal(efectivoRecibido,cambio){if(!validarPedidoParaCobro())return;const editing=!!currentOrderOriginal,reason=txt($('orderEditReason').value).trim(),total=currentOrderItems.reduce((a,i)=>a+i.cantidad*i.precio,0),items=currentOrderItems.map(i=>({...i,subtotal:i.cantidad*i.precio}));let o;if(editing){o={...currentOrderOriginal,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),efectivoRecibido,cambio,modificado:true,modificaciones:[...(currentOrderOriginal.modificaciones||[]),{fecha:new Date().toISOString(),motivo:reason}],actualizado:new Date().toISOString()};await aplicarInventarioPedido(currentOrderOriginal.items,items,o.id)}else{o={id:idgen('o'),numero:formatPedido(settings.pedidoNumero||1),fecha:new Date().toISOString(),clienteId:currentOrderClient.id,clienteNombre:currentOrderClient.nombre+' '+currentOrderClient.apellido,clienteComercio:currentOrderClient.comercio||'',clienteTelefono:currentOrderClient.telefono,clienteTelefono2:currentOrderClient.telefono2||'',clienteCorreo:currentOrderClient.correo||'',clienteDireccion:currentOrderClient.direccion||'',departamento:currentOrderClient.departamento,municipio:currentOrderClient.municipio,distrito:currentOrderClient.distrito,clienteRuta:currentOrderClient.ruta,rutaId:activeRoute.id,rutaNombre:activeRoute.nombre,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),efectivoRecibido,cambio,comprobante:currentOrderClient.comprobante||'RECIBO',modificado:false,modificaciones:[]};await aplicarInventarioPedido([],items,o.id);settings.pedidoNumero=(settings.pedidoNumero||1)+1;await putStore('settings',settings)}await putStore('pedidos',o);pedidos=await getAllStore('pedidos');actualizarRutaBar();cerrarDlg('orderDlg');toast(editing?'Pedido modificado':'Pedido guardado');setTimeout(()=>compartirPedidoPDF(o,{automatico:true}),250)}
+async function guardarPedidoFinal(efectivoRecibido,cambio){if(!validarPedidoParaCobro())return;const editing=!!currentOrderOriginal,reason=txt($('orderEditReason').value).trim(),total=currentOrderItems.reduce((a,i)=>a+i.cantidad*i.precio,0),items=currentOrderItems.map(i=>({...i,subtotal:i.cantidad*i.precio}));let o;if(editing){o={...currentOrderOriginal,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),efectivoRecibido,cambio,modificado:true,modificaciones:[...(currentOrderOriginal.modificaciones||[]),{fecha:new Date().toISOString(),motivo:reason}],actualizado:new Date().toISOString()};await putStore('pedidos',o);await aplicarInventarioPedido(currentOrderOriginal.items,items,o.id)}else{o={id:idgen('o'),numero:formatPedido(settings.pedidoNumero||1),fecha:new Date().toISOString(),clienteId:currentOrderClient.id,clienteNombre:currentOrderClient.nombre+' '+currentOrderClient.apellido,clienteComercio:currentOrderClient.comercio||'',clienteTelefono:currentOrderClient.telefono,clienteTelefono2:currentOrderClient.telefono2||'',clienteCorreo:currentOrderClient.correo||'',clienteDireccion:currentOrderClient.direccion||'',departamento:currentOrderClient.departamento,municipio:currentOrderClient.municipio,distrito:currentOrderClient.distrito,clienteRuta:currentOrderClient.ruta,rutaId:activeRoute.id,rutaNombre:activeRoute.nombre,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),efectivoRecibido,cambio,comprobante:currentOrderClient.comprobante||'RECIBO',modificado:false,modificaciones:[]};/* Guardar primero el pedido para que los movimientos posteriores nunca violen la FK pedido_id. */await putStore('pedidos',o);await aplicarInventarioPedido([],items,o.id);settings.pedidoNumero=(settings.pedidoNumero||1)+1;await putStore('settings',settings)}pedidos=await getAllStore('pedidos');actualizarRutaBar();cerrarDlg('orderDlg');toast(editing?'Pedido modificado':'Pedido guardado');setTimeout(()=>compartirPedidoPDF(o,{automatico:true}),250)}
 
 function abrirHistorialPedidos(){renderHistorialPedidos();$('ordersHistoryDlg').showModal()}
 function renderHistorialPedidos(){const q=norm($('orderHistorySearch').value),list=pedidos.filter(o=>!q||[o.numero,o.clienteNombre,o.clienteComercio,o.rutaNombre].some(x=>norm(x).includes(q))).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));$('orderHistoryRows').innerHTML=list.length?list.map(o=>`<tr><td><b>${esc(o.numero)}</b></td><td>${dateText(o.fecha)}</td><td>${esc(o.clienteNombre)}</td><td>${esc(o.clienteComercio)}</td><td>${esc(o.rutaNombre)}</td><td>${o.itemsTotal}</td><td>${money(o.total)}</td><td>${o.modificado?'<span class="tag purple">MODIFICADO</span>':'<span class="tag green">ORIGINAL</span>'}</td><td><button class="rowbtn" title="Ver" onclick="verPedido('${o.id}')">👁️</button><button class="rowbtn" title="Editar" onclick="editarPedido('${o.id}')">✏️</button><button class="rowbtn" title="Compartir" onclick="compartirPedidoPorId('${o.id}')">📤</button><button class="rowbtn" title="Descargar PDF" onclick="descargarPedido('${o.id}')">⬇️</button></td></tr>`).join(''):`<tr><td colspan="9" class="empty">No hay pedidos.</td></tr>`}

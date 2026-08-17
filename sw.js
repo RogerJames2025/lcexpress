@@ -1,4 +1,4 @@
-const CACHE='lcexpress-v10.8.3';
+const CACHE='lcexpress-v10.8.5';
 const CORE=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://cdn.tailwindcss.com',

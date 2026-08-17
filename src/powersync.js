@@ -114,28 +114,54 @@ class LCConnector {
 
   async uploadData(database) {
     lastUploadAttemptAt = new Date().toISOString();
-    const batch = await database.getCrudBatch();
-    if (!batch) return;
+    // Procesamos una transacción lógica por llamada. PowerSync volverá a invocar
+    // uploadData() inmediatamente mientras existan elementos en la cola.
+    const tx = await database.getNextCrudTransaction();
+    if (!tx) return;
     const sb = supabaseClient();
+
+    // Recuperación de colas antiguas: algunas versiones crearon el movimiento de venta
+    // antes del encabezado del pedido. Si el movimiento referencia un pedido que todavía
+    // no existe en Supabase, publicamos primero el encabezado local para satisfacer la FK.
+    async function ensurePedidoExists(pedidoId) {
+      if (!pedidoId) return;
+      const { data: remote, error: readErr } = await sb.from('pedidos').select('id').eq('id', pedidoId).maybeSingle();
+      if (readErr) throw readErr;
+      if (remote?.id) return;
+      const rows = await database.getAll('SELECT * FROM pedidos WHERE id = ? LIMIT 1', [pedidoId]);
+      const local = rows?.[0];
+      if (!local) throw new Error(`El movimiento referencia el pedido ${pedidoId}, pero ese pedido no existe en la base local ni en Supabase.`);
+      const { error: upErr } = await sb.from('pedidos').upsert(local);
+      if (upErr) throw upErr;
+    }
+
+    // Mantener dependencias dentro de la misma transacción en orden seguro.
+    const priority = {
+      productos: 10, clientes: 20, rutas: 30, inventarios: 35,
+      pedidos: 40, pedido_detalle: 50, inventario_detalle: 55,
+      inventario_participantes: 56, inventario_movimientos: 60, configuracion: 90
+    };
+    const ops = [...tx.crud].sort((a,b)=>(priority[a.table]??70)-(priority[b.table]??70));
+
     try {
-      for (const op of batch.crud) {
+      for (const op of ops) {
         const table = sb.from(op.table);
         if (op.op === UpdateType.PUT) {
+          if (op.table === 'inventario_movimientos' && op.opData?.pedido_id) {
+            await ensurePedidoExists(op.opData.pedido_id);
+          }
+          if (op.table === 'pedido_detalle' && op.opData?.pedido_id) {
+            await ensurePedidoExists(op.opData.pedido_id);
+          }
           const { error } = await table.upsert({ id: op.id, ...(op.opData || {}) });
           if (error) throw error;
         } else if (op.op === UpdateType.PATCH) {
           const { error } = await table.update(op.opData || {}).eq('id', op.id);
           if (error) throw error;
         } else if (op.op === UpdateType.DELETE) {
-          // PRODUCTOS: nunca borrar físicamente. Los productos pueden estar referenciados
-          // por pedidos, movimientos e inventarios históricos. Convertimos incluso los
-          // DELETE antiguos que ya estén en ps_crud a una baja lógica para desbloquear
-          // automáticamente colas pendientes de versiones anteriores.
           if (op.table === 'productos') {
-            const { error } = await table.update({
-              eliminado_en: new Date().toISOString(),
-              actualizado: new Date().toISOString()
-            }).eq('id', op.id);
+            const now = new Date().toISOString();
+            const { error } = await table.update({ eliminado_en: now, actualizado: now }).eq('id', op.id);
             if (error) throw error;
           } else {
             const { error } = await table.delete().eq('id', op.id);
@@ -143,7 +169,7 @@ class LCConnector {
           }
         }
       }
-      await batch.complete();
+      await tx.complete();
       lastUploadError = null;
       lastUploadSuccessAt = new Date().toISOString();
     } catch (error) {
