@@ -25,7 +25,10 @@ const pedidos = new Table({
   cliente_comercio: column.text, cliente_telefono: column.text, departamento: column.text,
   municipio: column.text, distrito: column.text, cliente_ruta: column.text, ruta_id: column.text,
   ruta_nombre: column.text, comprobante: column.text, cliente_direccion: column.text, cliente_telefono2: column.text, cliente_correo: column.text, total: column.real, items_total: column.real,
-  modificado: column.integer, modificaciones: column.text, efectivo_recibido: column.real, cambio: column.real, actualizado: column.text, eliminado_en: column.text
+  modificado: column.integer, modificaciones: column.text, efectivo_recibido: column.real, cambio: column.real,
+  estado: column.text, motivo_anulacion: column.text, anulado_en: column.text, anulado_por_id: column.text, anulado_por_nombre: column.text,
+  anulado_autorizado_por_id: column.text, anulado_autorizado_por_nombre: column.text,
+  actualizado: column.text, eliminado_en: column.text
 }, { indexes: { fecha: ['fecha'], cliente: ['cliente_id'], ruta: ['ruta_id'] } });
 
 const pedido_detalle = new Table({
@@ -260,7 +263,9 @@ function pedidoHeaderToApp(r) {
     id:r.id, numero:r.numero, fecha:r.fecha, clienteId:r.cliente_id, clienteNombre:r.cliente_nombre||'', clienteComercio:r.cliente_comercio||'',
     clienteTelefono:r.cliente_telefono||'', clienteTelefono2:r.cliente_telefono2||'', clienteCorreo:r.cliente_correo||'', clienteDireccion:r.cliente_direccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', clienteRuta:r.cliente_ruta||'',
     rutaId:r.ruta_id, rutaNombre:r.ruta_nombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), itemsTotal:Number(r.items_total||0),
-    modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), efectivoRecibido:Number(r.efectivo_recibido||0), cambio:Number(r.cambio||0), actualizado:r.actualizado, items:[]
+    modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), efectivoRecibido:Number(r.efectivo_recibido||0), cambio:Number(r.cambio||0),
+    estado:r.estado||'ACTIVO', motivoAnulacion:r.motivo_anulacion||'', anuladoEn:r.anulado_en||null, anuladoPorId:r.anulado_por_id||null, anuladoPorNombre:r.anulado_por_nombre||'',
+    anuladoAutorizadoPorId:r.anulado_autorizado_por_id||null, anuladoAutorizadoPorNombre:r.anulado_autorizado_por_nombre||'', actualizado:r.actualizado, items:[]
   };
 }
 function pedidoHeaderToDb(r) {
@@ -268,7 +273,10 @@ function pedidoHeaderToDb(r) {
     numero:r.numero, fecha:r.fecha||new Date().toISOString(), cliente_id:r.clienteId||null, cliente_nombre:r.clienteNombre||'', cliente_comercio:r.clienteComercio||'',
     cliente_telefono:r.clienteTelefono||'', cliente_telefono2:r.clienteTelefono2||'', cliente_correo:r.clienteCorreo||'', cliente_direccion:r.clienteDireccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', cliente_ruta:r.clienteRuta||'',
     ruta_id:r.rutaId||null, ruta_nombre:r.rutaNombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), items_total:Number(r.itemsTotal||0),
-    modificado:r.modificado?1:0, modificaciones:JSON.stringify(r.modificaciones||[]), efectivo_recibido:Number(r.efectivoRecibido||0), cambio:Number(r.cambio||0), actualizado:r.actualizado||new Date().toISOString(), eliminado_en:null
+    modificado:r.modificado?1:0, modificaciones:JSON.stringify(r.modificaciones||[]), efectivo_recibido:Number(r.efectivoRecibido||0), cambio:Number(r.cambio||0),
+    estado:r.estado||'ACTIVO', motivo_anulacion:r.motivoAnulacion||null, anulado_en:r.anuladoEn||null, anulado_por_id:r.anuladoPorId||null, anulado_por_nombre:r.anuladoPorNombre||null,
+    anulado_autorizado_por_id:r.anuladoAutorizadoPorId||null, anulado_autorizado_por_nombre:r.anuladoAutorizadoPorNombre||null,
+    actualizado:r.actualizado||new Date().toISOString(), eliminado_en:null
   };
 }
 function detalleToApp(r) {
@@ -386,6 +394,32 @@ async function replace(store, list) {
   for (const row of list) await put(store,row);
 }
 
+
+async function anularPedidoAtomic({pedidoId,motivo,solicitadoPorId=null,solicitadoPorNombre='',autorizadoPorId=null,autorizadoPorNombre='',deviceId=''}) {
+  const now=new Date().toISOString();
+  await db.writeTransaction(async tx=>{
+    const hs=await tx.getAll('SELECT * FROM pedidos WHERE id = ? LIMIT 1',[pedidoId]);
+    const h=hs?.[0]; if(!h)throw new Error('El pedido no existe en la base local.');
+    if(String(h.estado||'ACTIVO').toUpperCase()==='ANULADO')return;
+    const detail=await tx.getAll("SELECT * FROM pedido_detalle WHERE pedido_id = ? AND (eliminado_en IS NULL OR eliminado_en = '')",[pedidoId]);
+    const qty=new Map();
+    for(const d of detail)qty.set(d.producto_id,(qty.get(d.producto_id)||0)+Number(d.cantidad||0));
+    for(const [productoId,cantidad] of qty.entries()){
+      if(!productoId||!cantidad)continue;
+      const rows=await tx.getAll('SELECT * FROM productos WHERE id = ? LIMIT 1',[productoId]);
+      const prod=rows?.[0]; if(!prod)continue;
+      const nueva=Number(prod.cantidad||0)+cantidad;
+      let maleta=Number(prod.cantidad_maleta||0);
+      if(prod.maleta)maleta=Math.min(nueva,maleta+cantidad);
+      await tx.execute('UPDATE productos SET cantidad = ?, cantidad_maleta = ?, actualizado = ? WHERE id = ?',[nueva,maleta,now,productoId]);
+      const mid=`anul-${pedidoId}-${productoId}`;
+      const mov={producto_id:productoId,pedido_id:pedidoId,tipo:'ANULACION_PEDIDO',cantidad:Number(cantidad),motivo:'Reintegro por anulación: '+motivo,fecha:now,device_id:deviceId||'',usuario_id:solicitadoPorId||null,actualizado:now,referencia_id:pedidoId,autorizado_por_id:autorizadoPorId||null,autorizado_por_nombre:autorizadoPorNombre||'',origen:'LCEXPRESS'};
+      await writeRecord('inventario_movimientos',mid,mov,tx);
+    }
+    await tx.execute(`UPDATE pedidos SET estado='ANULADO', motivo_anulacion=?, anulado_en=?, anulado_por_id=?, anulado_por_nombre=?, anulado_autorizado_por_id=?, anulado_autorizado_por_nombre=?, actualizado=? WHERE id=?`,[motivo,now,solicitadoPorId,solicitadoPorNombre,autorizadoPorId,autorizadoPorNombre,now,pedidoId]);
+  });
+}
+
 async function pendingCount() {
   try {
     const rows = await db.getAll('SELECT count(*) AS n FROM ps_crud');
@@ -448,7 +482,7 @@ async function syncDiagnostics() {
 
 
 window.LCCloud = {
-  db, startPowerSync, getAll, put, del, replace, pendingCount, profile, syncStatus, syncNow, syncDiagnostics,
+  db, startPowerSync, getAll, put, del, replace, anularPedidoAtomic, pendingCount, profile, syncStatus, syncNow, syncDiagnostics,
   url: POWERSYNC_URL
 };
 window.dispatchEvent(new CustomEvent('lcexpress-cloud-ready'));
