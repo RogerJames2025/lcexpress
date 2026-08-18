@@ -109,10 +109,21 @@ function supabaseClient() {
 class LCConnector {
   async fetchCredentials() {
     const sb = supabaseClient();
-    const { data, error } = await sb.auth.getSession();
+    let { data, error } = await sb.auth.getSession();
     if (error) throw error;
-    if (!data?.session?.access_token) throw new Error('No hay una sesión autenticada para PowerSync');
-    return { endpoint: POWERSYNC_URL, token: data.session.access_token };
+    let session = data?.session || null;
+    // Si existe una sesión persistida, intentamos renovarla antes de declarar que PowerSync
+    // está sin credenciales. Esto permite recuperarse automáticamente al volver Internet.
+    if (session) {
+      try {
+        const refreshed = await sb.auth.refreshSession();
+        if (!refreshed.error && refreshed.data?.session) session = refreshed.data.session;
+      } catch (e) {
+        console.warn('LCexpress: no se pudo renovar la sesión Supabase para PowerSync', e);
+      }
+    }
+    if (!session?.access_token) throw new Error('SESIÓN_NUBE_NO_DISPONIBLE: vuelva a iniciar sesión en LCexpress para sincronizar');
+    return { endpoint: POWERSYNC_URL, token: session.access_token };
   }
 
   async uploadData(database) {
