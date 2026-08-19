@@ -4,7 +4,7 @@ const POWERSYNC_URL = 'https://6a761b9d53f73afec8a7b5f0.powersync.journeyapps.co
 
 const productos = new Table({
   codigo: column.text, descripcion: column.text, categoria: column.text,
-  cantidad: column.real, precio: column.real, caja: column.text, maleta: column.text,
+  cantidad: column.real, precio: column.real, precio_decimales: column.integer, caja: column.text, maleta: column.text,
   cantidad_maleta: column.real, notas: column.text, actualizado: column.text, eliminado_en: column.text
 }, { indexes: { codigo: ['codigo'], descripcion: ['descripcion'] } });
 
@@ -33,7 +33,7 @@ const pedidos = new Table({
 
 const pedido_detalle = new Table({
   pedido_id: column.text, producto_id: column.text, codigo: column.text, descripcion: column.text,
-  cantidad: column.real, precio: column.real, subtotal: column.real, vendedor_id: column.text, vendedor_nombre: column.text, actualizado: column.text, eliminado_en: column.text
+  cantidad: column.real, precio: column.real, precio_decimales: column.integer, subtotal: column.real, vendedor_id: column.text, vendedor_nombre: column.text, actualizado: column.text, eliminado_en: column.text
 }, { indexes: { pedido: ['pedido_id'], producto: ['producto_id'] } });
 
 const inventario_movimientos = new Table({
@@ -240,12 +240,12 @@ function parseJSON(value, fallback = []) {
 }
 
 function productoToApp(r) {
-  return { ...r, cantidadMaleta: Number(r.cantidad_maleta || 0) };
+  return { ...r, cantidadMaleta: Number(r.cantidad_maleta || 0), precioDecimales:Number(r.precio_decimales||2)===4?4:2 };
 }
 function productoToDb(r) {
   return {
     codigo: r.codigo || '', descripcion: r.descripcion || '', categoria: r.categoria || 'GENERAL',
-    cantidad: Number(r.cantidad || 0), precio: Number(r.precio || 0), caja: r.caja || '', maleta: r.maleta || '',
+    cantidad: Number(r.cantidad || 0), precio: Number(r.precio || 0), precio_decimales:Number(r.precioDecimales??r.precio_decimales??2)===4?4:2, caja: r.caja || '', maleta: r.maleta || '',
     cantidad_maleta: Number(r.cantidadMaleta ?? r.cantidad_maleta ?? 0), notas: r.notas || '',
     actualizado: r.actualizado || new Date().toISOString(), eliminado_en: r.eliminado_en || null
   };
@@ -291,7 +291,7 @@ function pedidoHeaderToDb(r) {
   };
 }
 function detalleToApp(r) {
-  return { detalleId:r.id, productoId:r.producto_id, codigo:r.codigo||'', descripcion:r.descripcion||'', cantidad:Number(r.cantidad||0), precio:Number(r.precio||0), subtotal:Number(r.subtotal||0), vendedorId:r.vendedor_id||'', vendedorNombre:r.vendedor_nombre||'' };
+  return { detalleId:r.id, productoId:r.producto_id, codigo:r.codigo||'', descripcion:r.descripcion||'', cantidad:Number(r.cantidad||0), precio:Number(r.precio||0), precioDecimales:Number(r.precio_decimales||2)===4?4:2, subtotal:Number(r.subtotal||0), vendedorId:r.vendedor_id||'', vendedorNombre:r.vendedor_nombre||'' };
 }
 
 async function exists(table, id, tx = db) {
@@ -336,7 +336,7 @@ async function putPedido(order) {
       keep.add(did);
       const data = {
         pedido_id:order.id, producto_id:item.productoId||null, codigo:item.codigo||'', descripcion:item.descripcion||'', cantidad:Number(item.cantidad||0),
-        precio:Number(item.precio||0), subtotal:Number(item.subtotal ?? (Number(item.cantidad||0)*Number(item.precio||0))), vendedor_id:item.vendedorId||null, vendedor_nombre:item.vendedorNombre||'', actualizado:now, eliminado_en:null
+        precio:Number(item.precio||0), precio_decimales:Number(item.precioDecimales??item.precio_decimales??2)===4?4:2, subtotal:Number(item.subtotal ?? (Number(item.cantidad||0)*Number(item.precio||0))), vendedor_id:item.vendedorId||null, vendedor_nombre:item.vendedorNombre||'', actualizado:now, eliminado_en:null
       };
       await writeRecord('pedido_detalle', did, data, tx);
     }
