@@ -25,7 +25,7 @@ const pedidos = new Table({
   cliente_comercio: column.text, cliente_telefono: column.text, departamento: column.text,
   municipio: column.text, distrito: column.text, cliente_ruta: column.text, ruta_id: column.text,
   ruta_nombre: column.text, comprobante: column.text, cliente_direccion: column.text, cliente_telefono2: column.text, cliente_correo: column.text, total: column.real, items_total: column.real,
-  modificado: column.integer, modificaciones: column.text, efectivo_recibido: column.real, cambio: column.real,
+  modificado: column.integer, modificaciones: column.text, forma_pago: column.text, pago_efectivo: column.real, pago_tarjeta: column.real, pago_transferencia: column.real, efectivo_recibido: column.real, cambio: column.real,
   estado: column.text, motivo_anulacion: column.text, anulado_en: column.text, anulado_por_id: column.text, anulado_por_nombre: column.text,
   anulado_autorizado_por_id: column.text, anulado_autorizado_por_nombre: column.text,
   actualizado: column.text, eliminado_en: column.text
@@ -274,7 +274,7 @@ function pedidoHeaderToApp(r) {
     id:r.id, numero:r.numero, fecha:r.fecha, clienteId:r.cliente_id, clienteNombre:r.cliente_nombre||'', clienteComercio:r.cliente_comercio||'',
     clienteTelefono:r.cliente_telefono||'', clienteTelefono2:r.cliente_telefono2||'', clienteCorreo:r.cliente_correo||'', clienteDireccion:r.cliente_direccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', clienteRuta:r.cliente_ruta||'',
     rutaId:r.ruta_id, rutaNombre:r.ruta_nombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), itemsTotal:Number(r.items_total||0),
-    modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), efectivoRecibido:Number(r.efectivo_recibido||0), cambio:Number(r.cambio||0),
+    modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), formaPago:r.forma_pago||'EFECTIVO', pagoEfectivo:Number(r.pago_efectivo||0), pagoTarjeta:Number(r.pago_tarjeta||0), pagoTransferencia:Number(r.pago_transferencia||0), efectivoRecibido:Number(r.efectivo_recibido||0), cambio:Number(r.cambio||0),
     estado:r.estado||'ACTIVO', motivoAnulacion:r.motivo_anulacion||'', anuladoEn:r.anulado_en||null, anuladoPorId:r.anulado_por_id||null, anuladoPorNombre:r.anulado_por_nombre||'',
     anuladoAutorizadoPorId:r.anulado_autorizado_por_id||null, anuladoAutorizadoPorNombre:r.anulado_autorizado_por_nombre||'', actualizado:r.actualizado, items:[]
   };
@@ -284,7 +284,7 @@ function pedidoHeaderToDb(r) {
     numero:r.numero, fecha:r.fecha||new Date().toISOString(), cliente_id:r.clienteId||null, cliente_nombre:r.clienteNombre||'', cliente_comercio:r.clienteComercio||'',
     cliente_telefono:r.clienteTelefono||'', cliente_telefono2:r.clienteTelefono2||'', cliente_correo:r.clienteCorreo||'', cliente_direccion:r.clienteDireccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', cliente_ruta:r.clienteRuta||'',
     ruta_id:r.rutaId||null, ruta_nombre:r.rutaNombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), items_total:Number(r.itemsTotal||0),
-    modificado:r.modificado?1:0, modificaciones:JSON.stringify(r.modificaciones||[]), efectivo_recibido:Number(r.efectivoRecibido||0), cambio:Number(r.cambio||0),
+    modificado:r.modificado?1:0, modificaciones:JSON.stringify(r.modificaciones||[]), forma_pago:r.formaPago||'EFECTIVO', pago_efectivo:Number(r.pagoEfectivo||0), pago_tarjeta:Number(r.pagoTarjeta||0), pago_transferencia:Number(r.pagoTransferencia||0), efectivo_recibido:Number(r.efectivoRecibido||0), cambio:Number(r.cambio||0),
     estado:r.estado||'ACTIVO', motivo_anulacion:r.motivoAnulacion||null, anulado_en:r.anuladoEn||null, anulado_por_id:r.anuladoPorId||null, anulado_por_nombre:r.anuladoPorNombre||null,
     anulado_autorizado_por_id:r.anuladoAutorizadoPorId||null, anulado_autorizado_por_nombre:r.anuladoAutorizadoPorNombre||null,
     actualizado:r.actualizado||new Date().toISOString(), eliminado_en:null
