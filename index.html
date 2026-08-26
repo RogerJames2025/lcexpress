@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.9.4 PowerSync</title>
+<title>LCexpress v10.9.5 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -54,7 +54,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.9.4</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.9.5</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -247,7 +247,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   <div id="inventoryParticipants" class="notice" style="padding:10px 12px;margin:0 0 10px"></div>
   <div class="searchbox"><input id="inventorySearch" placeholder="Buscar producto por código o descripción…" oninput="renderInventarioConteo()"><button class="btn" onclick="guardarInventarioEnCurso()">💾 Guardar progreso</button></div>
   <div class="scroll" style="max-height:58vh"><table style="min-width:1450px"><thead><tr><th>Código</th><th>Producto</th><th>Inventario inicial</th><th>Entradas</th><th>Vendido</th><th>Otras salidas</th><th>Esperado</th><th>Conteo físico</th><th>Diferencia</th><th>Último conteo</th></tr></thead><tbody id="inventoryCountRows"></tbody></table></div>
-  <div class="modalfoot"><button class="btn" onclick="cerrarTomaInventario()">Cerrar / continuar luego</button><button class="btn green" onclick="solicitarCierreInventario()">Aceptar cuadre / inventario final</button></div>
+  <div class="modalfoot"><button class="btn" onclick="cerrarTomaInventario()">Cerrar / continuar luego</button><button class="btn red" onclick="cancelarTomaInventario()">⛔ Cancelar toma</button><button class="btn green" onclick="solicitarCierreInventario()">Aceptar cuadre / inventario final</button></div>
 </div></dialog>
 
 <dialog id="inventoryViewDlg" class="xwide"><div class="modalhead"><b>Resultado de inventario</b><button class="btn" onclick="cerrarDlg('inventoryViewDlg')">×</button></div><div class="modalbody" id="inventoryViewBody"></div><div class="modalfoot" style="padding:0 17px 17px"><button id="invPreviewBtn" class="btn blue">👁️ Previsualizar PDF</button><button id="invPrintBtn" class="btn">🖨️ Imprimir</button><button id="invShareBtn" class="btn purple">📤 Compartir</button><button id="invDownloadBtn" class="btn red">⬇️ Descargar PDF</button></div></dialog>
@@ -509,18 +509,68 @@ function ordenarProductosPorBusqueda(lista,consulta){
 }
 const esc=s=>txt(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let productos=[],clientes=[],pedidos=[],rutas=[],inventarios=[],inventarioDetalle=[],inventarioParticipantes=[],inventarioMovimientos=[],settings={},perfilesVendedores=[],catalogCategorias=[],catalogCajas=[],catalogMaletas=[],catalogos={categorias_producto:[],cajas:[],maletas:[]},seleccionadoId=null,activeRoute=null,currentOrderItems=[],currentOrderClient=null,currentOrderOriginal=null;
-let currentInventory=null,inventoryHeartbeatTimer=null,lastAutoInventoryId=null,bulkItems=[],ajusteAutorizadoContext=null,pendingAdminAuth=null,paymentContext=null,pdfPreviewUrl=null,pendingCancelOrderId=null,orderSaveLock=false,currentOrderSaveId=null;
+let currentInventory=null,inventoryHeartbeatTimer=null,lastAutoInventoryId=null,inventoryAutoDismissedId=null,inventorySaveBusy=false,inventoryFinalizing=false,bulkItems=[],ajusteAutorizadoContext=null,pendingAdminAuth=null,paymentContext=null,pdfPreviewUrl=null,pendingCancelOrderId=null,orderSaveLock=false,currentOrderSaveId=null;
 
 function openDB(){return Promise.resolve(window.LCCloud?.db||null)}
-async function esperarCloud(){if(window.LCCloud)return window.LCCloud;await new Promise(resolve=>window.addEventListener('lcexpress-cloud-ready',resolve,{once:true}));return window.LCCloud}
-async function getAllStore(store){const c=await esperarCloud();return c.getAll(store)}
-const SYNCABLE_STORES=new Set(['productos','clientes','pedidos','rutas','settings','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes']);
-async function rawPutStore(store,obj){const c=await esperarCloud();await c.put(store,obj);return obj}
-async function rawDelStore(store,id){const c=await esperarCloud();return c.del(store,id)}
+const OFFLINE_DATA_KEY='lcexpress_offline_data_v2',OFFLINE_PENDING_KEY='lcexpress_offline_pending_v2';
+function leerOfflineData(){try{return JSON.parse(localStorage.getItem(OFFLINE_DATA_KEY)||'{}')||{}}catch{return {}}}
+function escribirOfflineData(data){try{localStorage.setItem(OFFLINE_DATA_KEY,JSON.stringify(data||{}));return true}catch(e){console.warn('No se pudo actualizar snapshot offline',e);return false}}
+function snapshotStore(store,list){const d=leerOfflineData();d[store]=Array.isArray(list)?list:[];d._fecha=new Date().toISOString();escribirOfflineData(d)}
+function getOfflineStore(store){const d=leerOfflineData();return Array.isArray(d[store])?JSON.parse(JSON.stringify(d[store])):[]}
+function mutarOfflinePut(store,obj){const d=leerOfflineData(),a=Array.isArray(d[store])?d[store]:[],ix=a.findIndex(x=>x.id===obj.id);if(ix>=0)a[ix]=obj;else a.push(obj);d[store]=a;d._fecha=new Date().toISOString();escribirOfflineData(d)}
+function mutarOfflineDel(store,id){const d=leerOfflineData(),a=Array.isArray(d[store])?d[store]:[];d[store]=a.filter(x=>x.id!==id);d._fecha=new Date().toISOString();escribirOfflineData(d)}
+function mutarOfflineReplace(store,list){const d=leerOfflineData();d[store]=Array.isArray(list)?list:[];d._fecha=new Date().toISOString();escribirOfflineData(d)}
+function leerOfflinePending(){try{return JSON.parse(localStorage.getItem(OFFLINE_PENDING_KEY)||'[]')||[]}catch{return []}}
+function guardarOfflinePending(a){try{localStorage.setItem(OFFLINE_PENDING_KEY,JSON.stringify(a||[]))}catch(e){console.warn('No se pudo guardar cola offline auxiliar',e)}}
+function agregarOfflinePending(op){const a=leerOfflinePending();a.push({...op,queuedAt:new Date().toISOString()});guardarOfflinePending(a)}
+async function esperarCloud(maxMs=navigator.onLine?10000:1200){
+  if(window.LCCloud)return window.LCCloud;
+  return await new Promise(resolve=>{
+    let done=false;
+    const fin=v=>{if(done)return;done=true;clearTimeout(t);window.removeEventListener('lcexpress-cloud-ready',ready);resolve(v)};
+    const ready=()=>fin(window.LCCloud||null);
+    window.addEventListener('lcexpress-cloud-ready',ready);
+    const t=setTimeout(()=>fin(window.LCCloud||null),maxMs);
+  });
+}
+async function replayOfflinePending(){
+  const ops=leerOfflinePending();if(!ops.length||!window.LCCloud)return 0;
+  const c=window.LCCloud;let done=0;
+  for(let i=0;i<ops.length;i++){
+    const op=ops[i];
+    try{
+      if(op.op==='put')await c.put(op.store,op.obj);
+      else if(op.op==='del')await c.del(op.store,op.id);
+      else if(op.op==='replace')await c.replace(op.store,op.list||[]);
+      done++;
+    }catch(e){console.warn('Pendiente offline no pudo reproducirse todavía',op,e);guardarOfflinePending(ops.slice(i));return done}
+  }
+  guardarOfflinePending([]);return done;
+}
+async function getAllStore(store){
+  const c=await esperarCloud();
+  if(c){try{const rows=await c.getAll(store);snapshotStore(store,rows);return rows}catch(e){console.warn('Lectura PowerSync falló; usando snapshot local',store,e)}}
+  return getOfflineStore(store);
+}
+const SYNCABLE_STORES=new Set(['productos','clientes','pedidos','rutas','settings','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','categorias_producto','cajas','maletas','perfiles']);
+async function rawPutStore(store,obj){return putStore(store,obj)}
+async function rawDelStore(store,id){return delStore(store,id)}
 async function enqueueSync(){return}
-async function putStore(store,obj,skipQueue=false){const c=await esperarCloud();await c.put(store,obj);await updateSyncStatus();return obj}
-async function delStore(store,id,skipQueue=false){const c=await esperarCloud();await c.del(store,id);await updateSyncStatus()}
-async function replaceStore(store,list,skipQueue=false){const c=await esperarCloud();await c.replace(store,list);await updateSyncStatus()}
+async function putStore(store,obj,skipQueue=false){
+  const c=await esperarCloud();
+  if(c){try{await c.put(store,obj);mutarOfflinePut(store,obj);if(navigator.onLine)replayOfflinePending().catch(()=>{});updateSyncStatus().catch(()=>{});return obj}catch(e){console.warn('PowerSync no disponible para escritura; guardando en cola offline auxiliar',e)}}
+  mutarOfflinePut(store,obj);agregarOfflinePending({op:'put',store,obj});updateSyncStatus().catch(()=>{});return obj;
+}
+async function delStore(store,id,skipQueue=false){
+  const c=await esperarCloud();
+  if(c){try{await c.del(store,id);mutarOfflineDel(store,id);updateSyncStatus().catch(()=>{});return}catch(e){console.warn(e)}}
+  mutarOfflineDel(store,id);agregarOfflinePending({op:'del',store,id});updateSyncStatus().catch(()=>{});
+}
+async function replaceStore(store,list,skipQueue=false){
+  const c=await esperarCloud();
+  if(c){try{await c.replace(store,list);mutarOfflineReplace(store,list);updateSyncStatus().catch(()=>{});return}catch(e){console.warn(e)}}
+  mutarOfflineReplace(store,list);agregarOfflinePending({op:'replace',store,list});updateSyncStatus().catch(()=>{});
+}
 function toast(m){$('toast').textContent=m;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2600)}
 function cerrarDlg(id){const d=$(id);if(d?.open)d.close()}
 function money(n){return '$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -601,7 +651,7 @@ async function mostrarEstadoCloud(){
   let st={pending:0,connected:false,hasSynced:false};
   try{const c=await esperarCloud();st=c.syncDiagnostics?await c.syncDiagnostics():await c.syncStatus()}catch(e){st.diagnosticError=String(e?.message||e)}
   const au=await diagnosticoAuthNube();
-  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.9.4<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
+  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.9.5<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
   $('cloudDlg').showModal();
 }
 async function sincronizarAhora(){
@@ -630,7 +680,7 @@ async function sincronizarAhora(){
 window.addEventListener('online',async()=>{
   updateSyncStatus();toast('Internet disponible. Validando conexión de nube…');
   const r=await recuperarConexionNube({silencioso:true});
-  if(r.ok){toast('Conexión de nube recuperada. Sincronizando novedades…');try{await (await esperarCloud()).syncNow({timeoutMs:12000});await refrescarUIDesdePowerSync()}catch(e){console.warn(e)}}
+  if(r.ok){toast('Conexión de nube recuperada. Sincronizando novedades…');try{await replayOfflinePending();const _c=await esperarCloud();if(_c)await _c.syncNow({timeoutMs:12000});await refrescarUIDesdePowerSync()}catch(e){console.warn(e)}}
   else toast('Internet disponible, pero la sesión de nube necesita volver a autenticarse.');
   await updateSyncStatus();
 });
@@ -664,6 +714,9 @@ async function loadAll(opts={}){
   try{catalogos.cajas=await getAllStore('cajas');catalogCajas=catalogos.cajas.filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogos.cajas=[];catalogCajas=[]}
   try{catalogos.maletas=await getAllStore('maletas');catalogMaletas=catalogos.maletas.filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogos.maletas=[];catalogMaletas=[]}
   activeRoute=rutas.find(r=>r.estado==='ABIERTA')||null;
+  snapshotStore('productos',productos);snapshotStore('clientes',clientes);snapshotStore('pedidos',pedidos);snapshotStore('rutas',rutas);
+  snapshotStore('inventarios',inventarios);snapshotStore('inventario_detalle',inventarioDetalle);snapshotStore('inventario_participantes',inventarioParticipantes);snapshotStore('inventario_movimientos',inventarioMovimientos);
+  snapshotStore('settings',[settings]);snapshotStore('categorias_producto',catalogos.categorias_producto||[]);snapshotStore('cajas',catalogos.cajas||[]);snapshotStore('maletas',catalogos.maletas||[]);
 }
 let liveSyncStarted=false,liveSyncTimer=null,liveSyncBusy=false;
 function dialogoAbierto(id){const el=$(id);return !!(el&&el.open)}
@@ -680,8 +733,8 @@ async function refrescarUIDesdePowerSync(){
     if(dialogoAbierto('inventoriesDlg'))renderInventarios();
     if(dialogoAbierto('inventoryMovesDlg'))renderMovimientosInventario();
     const activoAhora=inventarioEnCurso();
-    if(dialogoAbierto('inventoryCountDlg')&&currentInventory){currentInventory=inventarios.find(x=>x.id===currentInventory.id)||currentInventory;if(!document.activeElement?.classList?.contains('inv-count-input'))renderInventarioConteo();else renderParticipantesInventario();}
-    else if(activoAhora&&!dialogoAbierto('adminAuthDlg')){setTimeout(()=>entrarInventarioActivoAutomatico(),80);}
+    if(dialogoAbierto('inventoryCountDlg')&&currentInventory&&!inventoryFinalizing){currentInventory=inventarios.find(x=>x.id===currentInventory.id)||currentInventory;if(!document.activeElement?.classList?.contains('inv-count-input')&&!inventorySaveBusy)renderInventarioConteo();else renderParticipantesInventario();}
+    else if(activoAhora&&!dialogoAbierto('adminAuthDlg')&&!inventoryFinalizing&&inventoryAutoDismissedId!==activoAhora.id){setTimeout(()=>entrarInventarioActivoAutomatico(),80);}
     await updateSyncStatus();
   }catch(e){console.warn('No se pudo refrescar la interfaz desde PowerSync',e)}finally{liveSyncBusy=false}
 }
@@ -705,8 +758,9 @@ async function prepararModoOffline(){
 async function init(){
   getDeviceId();
   await esperarSincronizacionInicial();
+  if(navigator.onLine&&window.LCCloud)await replayOfflinePending().catch(e=>console.warn(e));
   await loadAll();
-  try{perfilesVendedores=await getAllStore('perfiles')}catch{perfilesVendedores=[]}
+  try{perfilesVendedores=await getAllStore('perfiles');snapshotStore('perfiles',perfilesVendedores)}catch{perfilesVendedores=getOfflineStore('perfiles')}
   if(inventarioEnCurso())setTimeout(()=>entrarInventarioActivoAutomatico(),250);
   llenarFiltros();actualizarCatalogosProducto();renderProductos();actualizarRutaBar();llenarDepartamentos();actualizarRutasSugeridas();
   await activarActualizacionTiempoReal();
@@ -742,7 +796,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
   });
-  navigator.serviceWorker.register('/sw.js?v=10.8.6',{updateViaCache:'none'}).then(reg=>{
+  navigator.serviceWorker.register('/sw.js?v=10.9.5',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
@@ -758,10 +812,10 @@ if('serviceWorker' in navigator){
 /* INVENTARIO */
 function productosFiltrados(){const q=$('q').value,c=$('fCaja').value,m=$('fMaleta').value,s=$('fStock').value;const base=productos.filter(p=>(!c||p.caja===c)&&(!m||p.maleta===m)&&(!s||(s==='con'?+p.cantidad>0:+p.cantidad===0)));return ordenarProductosPorBusqueda(base,q)}
 function ultimoConteoFisicoProducto(productoId){
-  const ds=(inventarioDetalle||[]).filter(d=>d.producto_id===productoId&&d.conteo_fisico!==null&&d.conteo_fisico!==undefined);
-  if(!ds.length)return null;
-  ds.sort((a,b)=>new Date(b.contado_en||b.actualizado||0)-new Date(a.contado_en||a.actualizado||0));
-  return ds[0];
+  const inv=[...(inventarios||[])].filter(i=>i.estado==='ACEPTADO').sort((a,b)=>new Date(b.fecha_cierre||b.actualizado||0)-new Date(a.fecha_cierre||a.actualizado||0))[0];
+  if(!inv)return null;
+  const d=(inventarioDetalle||[]).find(x=>x.inventario_id===inv.id&&x.producto_id===productoId);
+  return d&&d.conteo_fisico!==null&&d.conteo_fisico!==undefined?d:null;
 }
 function renderProductos(){const list=productosFiltrados(),tbody=$('rows');if(seleccionadoId&&!list.some(p=>p.id===seleccionadoId))seleccionadoId=null;tbody.innerHTML=list.length?list.map(p=>`<tr class="${p.id===seleccionadoId?'selected':''}"><td class="selectcol"><input class="rowcheck" type="checkbox" ${p.id===seleccionadoId?'checked':''} onchange="seleccionarProducto('${p.id}',this.checked)"></td><td class="code">${esc(p.codigo)||'S/C'}</td><td><b>${esc(p.descripcion)}</b>${p.notas?`<br><small class="muted">${esc(p.notas)}</small>`:''}</td><td>${esc(p.categoria||'GENERAL')}</td><td class="qty">${(()=>{const u=ultimoConteoFisicoProducto(p.id);return u?`${Number(u.conteo_fisico)}${u.contado_en?`<br><small class="muted">${dateText(u.contado_en)}</small>`:''}`:'—'})()}</td><td class="qty">${+p.cantidad||0}</td><td>${formatoPrecio(p.precio,decimalesPrecio(p))}</td><td><span class="tag">${esc(p.caja)||'Sin caja'}</span></td><td><span class="tag purple">${esc(p.maleta)||'Sin maleta'}${p.maleta?` · ${+p.cantidadMaleta||0} u.`:''}</span></td><td class="actionscol"><button class="rowbtn" onclick="seleccionarYEditar('${p.id}')" title="Editar">✏️</button><button class="rowbtn" onclick="seleccionarYEliminar('${p.id}')" title="Eliminar">🗑️</button></td></tr>`).join(''):`<tr><td colspan="10" class="empty">No se encontraron productos.</td></tr>`;$('sProductos').textContent=list.length;$('sUnidades').textContent=list.reduce((a,p)=>a+(+p.cantidad||0),0);$('sValor').textContent=money(list.reduce((a,p)=>a+(+p.cantidad||0)*(+p.precio||0),0));$('sUbicaciones').textContent=new Set(list.flatMap(p=>[p.caja,p.maleta]).filter(Boolean)).size;$('sClientes').textContent=clientes.length}
 function seleccionarProducto(id,on){seleccionadoId=on?id:null;renderProductos()}
@@ -1123,6 +1177,24 @@ function cancelarAutorizacionAdmin(){cerrarDlg('adminAuthDlg');if(pendingAdminAu
 async function confirmarAutorizacionAdmin(e){e.preventDefault();const id=$('adminAuthUser').value,a=adminsActivos().find(x=>x.id===id),pass=$('adminAuthPassword').value;if(!a||!pass)return;const btn=$('adminAuthBtn');btn.disabled=true;btn.textContent='Validando…';$('adminAuthMsg').style.display='none';try{const temp=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lc-auth-'+Date.now()}});const {data,error}=await temp.auth.signInWithPassword({email:a.email,password:pass});if(error||data?.user?.id!==a.id)throw new Error('Contraseña incorrecta o usuario no autorizado.');try{await temp.auth.signOut({scope:'local'})}catch{}const result={id:a.id,nombre:[a.nombre,a.apellido].filter(Boolean).join(' '),email:a.email};cerrarDlg('adminAuthDlg');const r=pendingAdminAuth;pendingAdminAuth=null;if(r)r(result)}catch(err){$('adminAuthMsg').textContent=err?.message||'No se pudo validar la autorización.';$('adminAuthMsg').style.display='block'}finally{btn.disabled=false;btn.textContent='Autorizar'}}
 
 // ===================== INVENTARIO FÍSICO =====================
+const INV_DRAFT_PREFIX='lcexpress_inv_draft_';
+function leerBorradorInventario(invId){try{return JSON.parse(localStorage.getItem(INV_DRAFT_PREFIX+invId)||'{}')||{}}catch{return {}}}
+function guardarBorradorInventario(invId,draft){try{localStorage.setItem(INV_DRAFT_PREFIX+invId,JSON.stringify(draft||{}))}catch{}}
+function borrarBorradorInventario(invId){try{localStorage.removeItem(INV_DRAFT_PREFIX+invId)}catch{}}
+function valorConteoSeguro(d){
+  const draft=currentInventory?leerBorradorInventario(currentInventory.id)[d.id]:null;
+  if(draft&&draft.valor!==null&&draft.valor!==undefined)return Number(draft.valor);
+  // Un cero solo cuenta como captura real si existe marca de quién/cuándo contó.
+  if(d.contado_en&&(d.conteo_fisico!==null&&d.conteo_fisico!==undefined))return Number(d.conteo_fisico);
+  if(d.conteo_fisico!==null&&d.conteo_fisico!==undefined&&Number(d.conteo_fisico)!==0)return Number(d.conteo_fisico);
+  return null;
+}
+function conteoFueCapturado(d){return valorConteoSeguro(d)!==null}
+function guardarDraftDetalle(d,val){
+  if(!currentInventory)return;const draft=leerBorradorInventario(currentInventory.id);
+  draft[d.id]={valor:val,contado_en:new Date().toISOString(),contado_por_nombre:perfilNombre(currentProfile,authSession),device_id:getDeviceId()};
+  guardarBorradorInventario(currentInventory.id,draft);
+}
 function siguienteInventarioNumero(){return 'INV'+String(settings.inventarioNumero||1).padStart(6,'0')}
 function detallesInventario(id){return inventarioDetalle.filter(d=>d.inventario_id===id)}
 function ultimoInventarioAceptado(antesDe=null){return inventarios.filter(i=>i.estado==='ACEPTADO'&&(!antesDe||new Date(i.fecha_cierre||i.fecha_inicio)<new Date(antesDe))).sort((a,b)=>new Date(b.fecha_cierre||b.fecha_inicio)-new Date(a.fecha_cierre||a.fecha_inicio))[0]||null}
@@ -1138,14 +1210,16 @@ function renderParticipantesInventario(){const el=$('inventoryParticipants');if(
 async function marcarParticipanteInventario(activo=true){if(!currentInventory||currentInventory.estado==='ACEPTADO')return;const now=new Date().toISOString(),id=participanteInventarioId(currentInventory.id),p={id,inventario_id:currentInventory.id,usuario_id:currentProfile?.id||authSession?.user?.id||null,nombre:perfilNombre(currentProfile,authSession),device_id:getDeviceId(),ultimo_latido:now,activo:activo?1:0,actualizado:now};await putStore('inventario_participantes',p);const i=inventarioParticipantes.findIndex(x=>x.id===id);if(i>=0)inventarioParticipantes[i]=p;else inventarioParticipantes.push(p);renderParticipantesInventario()}
 function iniciarHeartbeatInventario(){clearInterval(inventoryHeartbeatTimer);marcarParticipanteInventario(true).catch(()=>{});inventoryHeartbeatTimer=setInterval(()=>{if(currentInventory&&dialogoAbierto('inventoryCountDlg'))marcarParticipanteInventario(true).catch(()=>{})},45000)}
 async function salirParticipacionInventario(){clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;try{await marcarParticipanteInventario(false)}catch{}}
-async function entrarInventarioActivoAutomatico(){const inv=inventarioEnCurso();if(!inv||inv.estado==='ACEPTADO')return;if(dialogoAbierto('inventoryCountDlg')&&currentInventory?.id===inv.id)return;lastAutoInventoryId=inv.id;await abrirInventario(inv.id,true)}
-async function abrirInventario(id,automatico=false){currentInventory=inventarios.find(x=>x.id===id);if(!currentInventory)return;if(currentInventory.estado==='ACEPTADO'){verInventario(id);return}$('inventorySearch').value='';$('inventoryCountTitle').textContent='Toma de inventario '+currentInventory.numero;renderInventarioConteo();if(!$('inventoryCountDlg').open)$('inventoryCountDlg').showModal();iniciarHeartbeatInventario();if(automatico)toast('Se detectó una toma de inventario activa. Se abrió automáticamente para conteo compartido.')}
-function renderInventarioConteo(){if(!currentInventory)return;const q=norm($('inventorySearch')?.value||''),ds=detallesInventario(currentInventory.id).filter(d=>!q||norm([d.codigo,d.descripcion].join(' ')).includes(q));const all=detallesInventario(currentInventory.id),capturados=all.filter(d=>d.conteo_fisico!==null&&d.conteo_fisico!==undefined).length,diffs=all.filter(d=>d.conteo_fisico!=null&&Number(d.diferencia||0)!==0).length;$('inventoryCountSummary').innerHTML=`<div><small>Inventario</small><b>${esc(currentInventory.numero)}</b></div><div><small>Capturados</small><b>${capturados} / ${all.length}</b></div><div><small>Diferencias</small><b>${diffs}</b></div>`;renderParticipantesInventario();$('inventoryCountRows').innerHTML=ds.map(d=>{const quien=d.contado_por_nombre?`${esc(d.contado_por_nombre)}<br><small>${d.contado_en?dateText(d.contado_en):''}</small>`:'—';return `<tr><td class="code">${esc(d.codigo||'S/C')}</td><td><b>${esc(d.descripcion)}</b></td><td>${d.inventario_inicial}</td><td>${d.entradas}</td><td>${d.vendido}</td><td>${d.otras_salidas}</td><td><b>${d.esperado}</b></td><td><input class="inv-count-input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" value="${d.conteo_fisico==null?'':d.conteo_fisico}" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onchange="actualizarConteoFisico('${d.id}',this.value)" style="width:105px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-weight:800"></td><td><b style="color:${Number(d.diferencia||0)===0?'#047857':'#b91c1c'}">${d.conteo_fisico==null?'—':Number(d.diferencia||0)}</b></td><td>${quien}</td></tr>`}).join('')}
-async function actualizarConteoFisico(id,v){const d=inventarioDetalle.find(x=>x.id===id);if(!d)return;const limpio=String(v??'').replace(/[^0-9]/g,'');const val=limpio===''?null:Math.max(0,parseInt(limpio,10)||0);const now=new Date().toISOString();d.conteo_fisico=val;d.diferencia=val==null?null:val-Number(d.esperado||0);d.contado_por_id=currentProfile?.id||authSession?.user?.id||null;d.contado_por_nombre=perfilNombre(currentProfile,authSession);d.contado_device_id=getDeviceId();d.contado_en=now;d.actualizado=now;await putStore('inventario_detalle',d);await marcarParticipanteInventario(true);renderInventarioConteo()}
-async function guardarInventarioEnCurso(){await marcarParticipanteInventario(true);toast('Progreso guardado. El conteo se comparte automáticamente con los demás dispositivos conectados.')}
-async function cerrarTomaInventario(){await salirParticipacionInventario();cerrarDlg('inventoryCountDlg');currentInventory=null}
-async function solicitarCierreInventario(){if(!currentInventory)return;if(activeRoute){alert('No puede cerrar el inventario mientras exista una ruta abierta.');return}const ds=detallesInventario(currentInventory.id);if(ds.some(d=>d.conteo_fisico==null)){alert('Faltan productos por contar. Complete todos los conteos físicos antes de aceptar el inventario.');return}const auth=await solicitarAutorizacionAdmin('Autorizar cuadre final de inventario');if(!auth)return;if(!confirm('¿Aceptar este inventario como inventario final? El conteo físico pasará a ser la existencia oficial y será la base del próximo inventario.'))return;await aceptarInventario(currentInventory.id,auth)}
-async function aceptarInventario(id,auth){const inv=inventarios.find(x=>x.id===id),ds=detallesInventario(id),now=new Date().toISOString();if(!inv)return;for(const d of ds){const p=productos.find(x=>x.id===d.producto_id);if(!p)continue;const fis=Number(d.conteo_fisico||0),esperado=Number(d.esperado||0),ajuste=fis-esperado;p.cantidad=fis;if(Number(p.cantidadMaleta||0)>fis)p.cantidadMaleta=fis;p.actualizado=now;await putStore('productos',p);if(ajuste)await registrarMovimientoInventario({producto:p,tipo:'AJUSTE_INVENTARIO',cantidad:ajuste,motivo:`Cuadre ${inv.numero}: físico ${fis}, esperado ${esperado}`,referenciaId:inv.id,autorizacion:auth})}inv.estado='ACEPTADO';inv.fecha_cierre=now;inv.autorizado_por_id=auth.id;inv.autorizado_por_nombre=auth.nombre;inv.autorizado_en=now;inv.total_diferencias=ds.filter(d=>Number(d.diferencia||0)!==0).length;inv.actualizado=now;await putStore('inventarios',inv);for(const part of inventarioParticipantes.filter(x=>x.inventario_id===id&&x.activo!==false&&Number(x.activo)!==0)){part.activo=0;part.actualizado=now;await putStore('inventario_participantes',part)}clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;await loadAll({permitirSemilla:false});currentInventory=null;cerrarDlg('inventoryCountDlg');toast('Inventario aceptado por '+auth.nombre);verInventario(id)}
+async function entrarInventarioActivoAutomatico(){const inv=inventarioEnCurso();if(!inv||inv.estado==='ACEPTADO'||inventoryFinalizing)return;if(inventoryAutoDismissedId===inv.id)return;if(dialogoAbierto('inventoryCountDlg')&&currentInventory?.id===inv.id)return;lastAutoInventoryId=inv.id;await abrirInventario(inv.id,true)}
+async function abrirInventario(id,automatico=false){currentInventory=inventarios.find(x=>x.id===id);if(!currentInventory)return;if(currentInventory.estado==='ACEPTADO'){verInventario(id);return}if(!automatico)inventoryAutoDismissedId=null;$('inventorySearch').value='';$('inventoryCountTitle').textContent='Toma de inventario '+currentInventory.numero;renderInventarioConteo();if(!$('inventoryCountDlg').open)$('inventoryCountDlg').showModal();iniciarHeartbeatInventario();if(automatico)toast('Se detectó una toma de inventario activa. Se abrió automáticamente para conteo compartido.')}
+function renderInventarioConteo(){if(!currentInventory)return;const q=norm($('inventorySearch')?.value||''),all=detallesInventario(currentInventory.id),ds=all.filter(d=>!q||norm([d.codigo,d.descripcion].join(' ')).includes(q)),capturados=all.filter(conteoFueCapturado).length,diffs=all.filter(d=>{const v=valorConteoSeguro(d);return v!==null&&(v-Number(d.esperado||0))!==0}).length;$('inventoryCountSummary').innerHTML=`<div><small>Inventario</small><b>${esc(currentInventory.numero)}</b></div><div><small>Capturados</small><b>${capturados} / ${all.length}</b></div><div><small>Diferencias</small><b>${diffs}</b></div>`;renderParticipantesInventario();$('inventoryCountRows').innerHTML=ds.map(d=>{const v=valorConteoSeguro(d),dif=v===null?null:v-Number(d.esperado||0),quien=d.contado_por_nombre?`${esc(d.contado_por_nombre)}<br><small>${d.contado_en?dateText(d.contado_en):''}</small>`:'—';return `<tr><td class="code">${esc(d.codigo||'S/C')}</td><td><b>${esc(d.descripcion)}</b></td><td>${d.inventario_inicial}</td><td>${d.entradas}</td><td>${d.vendido}</td><td>${d.otras_salidas}</td><td><b>${d.esperado}</b></td><td><input class="inv-count-input" data-detail-id="${esc(d.id)}" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" value="${v===null?'':v}" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onchange="actualizarConteoFisico('${d.id}',this.value)" style="width:105px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-weight:800"></td><td><b style="color:${dif===0?'#047857':'#b91c1c'}">${dif===null?'—':dif}</b></td><td>${quien}</td></tr>`}).join('')}
+async function actualizarConteoFisico(id,v){const d=inventarioDetalle.find(x=>x.id===id);if(!d)return;const limpio=String(v??'').replace(/[^0-9]/g,''),val=limpio===''?null:Math.max(0,parseInt(limpio,10)||0),now=new Date().toISOString();if(val===null){const draft=leerBorradorInventario(currentInventory?.id||'');delete draft[id];guardarBorradorInventario(currentInventory?.id||'',draft);d.conteo_fisico=null;d.diferencia=null;d.contado_por_id=null;d.contado_por_nombre=null;d.contado_device_id=null;d.contado_en=null}else{guardarDraftDetalle(d,val);d.conteo_fisico=val;d.diferencia=val-Number(d.esperado||0);d.contado_por_id=currentProfile?.id||authSession?.user?.id||null;d.contado_por_nombre=perfilNombre(currentProfile,authSession);d.contado_device_id=getDeviceId();d.contado_en=now}d.actualizado=now;await putStore('inventario_detalle',d);await marcarParticipanteInventario(true);if(!inventorySaveBusy)renderInventarioConteo()}
+async function guardarInputsConteoVisibles(){if(!currentInventory)return;inventorySaveBusy=true;try{const inputs=[...document.querySelectorAll('#inventoryCountRows .inv-count-input')];for(const input of inputs){const id=input.dataset.detailId,d=inventarioDetalle.find(x=>x.id===id);if(!d)continue;const limpio=String(input.value??'').replace(/[^0-9]/g,''),val=limpio===''?null:Math.max(0,parseInt(limpio,10)||0),actual=valorConteoSeguro(d);if(val!==actual)await actualizarConteoFisico(id,input.value)}}finally{inventorySaveBusy=false}}
+async function guardarInventarioEnCurso(){if(!currentInventory||inventorySaveBusy)return;await guardarInputsConteoVisibles();await marcarParticipanteInventario(true);snapshotStore('inventario_detalle',inventarioDetalle);toast(`Avance guardado: ${detallesInventario(currentInventory.id).filter(conteoFueCapturado).length} producto(s) capturado(s).`)}
+async function cerrarTomaInventario(){if(currentInventory)await guardarInputsConteoVisibles();await salirParticipacionInventario();inventoryAutoDismissedId=currentInventory?.id||inventoryAutoDismissedId;cerrarDlg('inventoryCountDlg');currentInventory=null;toast('Toma cerrada en este dispositivo. Puede continuarla luego desde Historial de inventarios.')}
+async function cancelarTomaInventario(){if(!currentInventory)return;const inv=currentInventory,auth=await solicitarAutorizacionAdmin('Autorizar cancelación de toma de inventario');if(!auth)return;if(!confirm(`¿Cancelar ${inv.numero}?\n\nNO se modificarán las existencias. El conteo parcial quedará como historial cancelado.`))return;await guardarInputsConteoVisibles();const now=new Date().toISOString();inv.estado='CANCELADO';inv.fecha_cierre=now;inv.autorizado_por_id=auth.id;inv.autorizado_por_nombre=auth.nombre;inv.autorizado_en=now;inv.observacion=(inv.observacion?inv.observacion+' · ':'')+'Toma cancelada sin aplicar existencias';inv.actualizado=now;await putStore('inventarios',inv);borrarBorradorInventario(inv.id);inventoryAutoDismissedId=inv.id;currentInventory=null;clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;cerrarDlg('inventoryCountDlg');await loadAll({permitirSemilla:false});renderProductos();toast('Toma cancelada. Las existencias no fueron modificadas.')}
+async function solicitarCierreInventario(){if(!currentInventory)return;if(activeRoute){alert('No puede cerrar el inventario mientras exista una ruta abierta.');return}await guardarInputsConteoVisibles();const ds=detallesInventario(currentInventory.id);if(ds.some(d=>!conteoFueCapturado(d))){alert('Faltan productos por contar. Complete todos los conteos físicos antes de aceptar el inventario.');return}const auth=await solicitarAutorizacionAdmin('Autorizar cuadre final de inventario');if(!auth)return;if(!confirm('¿Aceptar este inventario como inventario final? El conteo físico pasará a ser la existencia oficial y será la base del próximo inventario.'))return;await aceptarInventario(currentInventory.id,auth)}
+async function aceptarInventario(id,auth){if(inventoryFinalizing)return;inventoryFinalizing=true;try{await guardarInputsConteoVisibles();const inv=inventarios.find(x=>x.id===id),ds=detallesInventario(id),now=new Date().toISOString();if(!inv)throw new Error('No se encontró la toma de inventario.');const faltan=ds.filter(d=>!conteoFueCapturado(d));if(faltan.length)throw new Error(`Faltan ${faltan.length} producto(s) por contar. No se aplicó ningún cambio.`);for(const d of ds){const p=productos.find(x=>x.id===d.producto_id);if(!p)continue;const fis=valorConteoSeguro(d);if(fis===null)throw new Error(`El producto ${d.descripcion||d.codigo} no tiene conteo físico confirmado.`);const esperado=Number(d.esperado||0),ajuste=fis-esperado;p.cantidad=fis;if(Number(p.cantidadMaleta||0)>fis)p.cantidadMaleta=fis;p.actualizado=now;await putStore('productos',p);if(ajuste)await registrarMovimientoInventario({producto:p,tipo:'AJUSTE_INVENTARIO',cantidad:ajuste,motivo:`Cuadre ${inv.numero}: físico ${fis}, esperado ${esperado}`,referenciaId:inv.id,autorizacion:auth})}inv.estado='ACEPTADO';inv.fecha_cierre=now;inv.autorizado_por_id=auth.id;inv.autorizado_por_nombre=auth.nombre;inv.autorizado_en=now;inv.total_diferencias=ds.filter(d=>{const v=valorConteoSeguro(d);return v!==null&&(v-Number(d.esperado||0))!==0}).length;inv.actualizado=now;await putStore('inventarios',inv);for(const part of inventarioParticipantes.filter(x=>x.inventario_id===id&&x.activo!==false&&Number(x.activo)!==0)){part.activo=0;part.actualizado=now;await putStore('inventario_participantes',part)}borrarBorradorInventario(id);inventoryAutoDismissedId=id;currentInventory=null;clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;cerrarDlg('inventoryCountDlg');await loadAll({permitirSemilla:false});llenarFiltros();renderProductos();actualizarRutaBar();toast('Inventario aceptado por '+auth.nombre);verInventario(id)}catch(e){console.error(e);alert('No se pudo aceptar el inventario.\n\n'+(e?.message||e)+'\n\nNo se cerró la toma para evitar perder el conteo.')}finally{inventoryFinalizing=false}}
 function verInventario(id){const inv=inventarios.find(x=>x.id===id);if(!inv)return;const ds=detallesInventario(id);$('inventoryViewBody').innerHTML=`<div class="customer-head"><div><small>Inventario</small><b>${esc(inv.numero)}</b></div><div><small>Inicio</small><b>${dateText(inv.fecha_inicio)}</b></div><div><small>Cierre</small><b>${inv.fecha_cierre?dateText(inv.fecha_cierre):'—'}</b></div><div><small>Iniciado por</small><b>${esc(inv.creado_por_nombre||'')}</b></div><div><small>Participantes</small><b>${esc(nombresParticipantesInventario(inv.id).join(', ')||inv.creado_por_nombre||'')}</b></div><div><small>Autorizado por</small><b>${esc(inv.autorizado_por_nombre||'—')}</b></div><div><small>Diferencias</small><b>${ds.filter(d=>Number(d.diferencia||0)!==0).length}</b></div></div><div class="scroll"><table style="min-width:1100px"><thead><tr><th>Código</th><th>Producto</th><th>Inicial</th><th>Entradas</th><th>Vendido</th><th>Otras salidas</th><th>Esperado</th><th>Físico</th><th>Diferencia</th></tr></thead><tbody>${ds.map(d=>`<tr><td>${esc(d.codigo||'S/C')}</td><td>${esc(d.descripcion)}</td><td>${d.inventario_inicial}</td><td>${d.entradas}</td><td>${d.vendido}</td><td>${d.otras_salidas}</td><td>${d.esperado}</td><td>${d.conteo_fisico??'—'}</td><td>${d.diferencia??'—'}</td></tr>`).join('')}</tbody></table></div>`;$('invPreviewBtn').onclick=()=>previsualizarInventario(id);$('invPrintBtn').onclick=()=>imprimirInventario(id);$('invShareBtn').onclick=()=>compartirInventario(id);$('invDownloadBtn').onclick=()=>descargarInventario(id);cerrarDlg('inventoriesDlg');$('inventoryViewDlg').showModal()}
 function crearInventarioDoc(id){const inv=inventarios.find(x=>x.id===id),ds=detallesInventario(id);if(!inv||!window.jspdf)return null;const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});doc.setFontSize(17);doc.text(`LCexpress - Inventario ${inv.numero}`,12,14);doc.setFontSize(8);doc.text(`Inicio: ${dateText(inv.fecha_inicio)}  Cierre: ${inv.fecha_cierre?dateText(inv.fecha_cierre):'EN CONTEO'}  Participantes: ${nombresParticipantesInventario(inv.id).join(', ')||inv.creado_por_nombre||''}  Autorizó: ${inv.autorizado_por_nombre||'—'}`,12,20);doc.autoTable({startY:25,head:[['Código','Producto','Inicial','Entradas','Vendido','Otras sal.','Esperado','Físico','Dif.']],body:ds.map(d=>[d.codigo||'S/C',d.descripcion,d.inventario_inicial,d.entradas,d.vendido,d.otras_salidas,d.esperado,d.conteo_fisico??'',d.diferencia??'']),styles:{fontSize:6.7},headStyles:{fillColor:[15,23,42]},margin:{left:8,right:8},columnStyles:{1:{cellWidth:75}}});return doc}
 function descargarInventario(id){const inv=inventarios.find(x=>x.id===id),doc=crearInventarioDoc(id);if(inv&&doc)doc.save(`LCexpress_${inv.numero}.pdf`)}
@@ -1188,7 +1262,7 @@ function exportarPDF(){if(!window.jspdf){alert('La exportación PDF requiere con
 /* CONFIG, BACKUP, IMPORT */
 function abrirConfiguracion(){if(!exigirAdmin())return;$('cfgPedidoPrefijo').value=settings.pedidoPrefijo||'PED';$('cfgPedidoNumero').value=settings.pedidoNumero||1;$('configDlg').showModal()}
 async function guardarConfig(e){e.preventDefault();settings.pedidoPrefijo=$('cfgPedidoPrefijo').value.trim().toUpperCase()||'PED';settings.pedidoNumero=Math.max(1,+$('cfgPedidoNumero').value||1);await putStore('settings',settings);cerrarDlg('configDlg');toast('Configuración guardada')}
-async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.9.4',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
+async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.9.5',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
 async function restaurarBackup(e){const f=e.target.files[0];if(!f)return;try{const b=JSON.parse(await f.text());if(b.app!=='LCexpress')throw 0;if(!confirm('¿Restaurar este backup? Se reemplazarán inventario, clientes, pedidos, rutas y configuración actuales.'))return;await replaceStore('productos',b.productos||[]);await replaceStore('clientes',b.clientes||[]);await replaceStore('pedidos',b.pedidos||[]);await replaceStore('rutas',b.rutas||[]);if(b.inventarios)await replaceStore('inventarios',b.inventarios||[]);if(b.inventarioDetalle)await replaceStore('inventario_detalle',b.inventarioDetalle||[]);if(b.inventarioParticipantes)await replaceStore('inventario_participantes',b.inventarioParticipantes||[]);if(b.inventarioMovimientos)await replaceStore('inventario_movimientos',b.inventarioMovimientos||[]);await replaceStore('settings',[b.settings||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1}]);await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();toast('Backup restaurado')}catch{alert('El archivo no es un backup válido de LCexpress.')}finally{e.target.value=''}}
 async function importarExcel(e){if(!exigirAdmin()){e.target.value='';return;}const f=e.target.files[0];if(!f||typeof XLSX==='undefined')return;const wb=XLSX.read(await f.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),pick=(r,names)=>{for(const k of Object.keys(r))if(names.includes(norm(k)))return r[k];return''};const list=rows.map((r,i)=>({id:'x'+Date.now()+i,codigo:txt(pick(r,['codigo','código'])),descripcion:txt(pick(r,['descripcion','descripción','producto'])).trim().toUpperCase(),cantidad:+pick(r,['cantidad','cant'])||0,precio:+pick(r,['precio','precio unitario'])||0,caja:txt(pick(r,['caja','cajas'])).toUpperCase(),maleta:txt(pick(r,['maleta'])).toUpperCase(),cantidadMaleta:+pick(r,['cantidad maleta','cantidad en maleta'])||0,categoria:txt(pick(r,['categoria','categoría'])||'GENERAL').toUpperCase(),notas:'',actualizado:new Date().toISOString()})).filter(p=>p.descripcion);if(!list.length){alert('No se reconocieron filas del Excel.');return}if(confirm(`Se encontraron ${list.length} productos. ¿Reemplazar el inventario actual?`)){await replaceStore('productos',list);productos=await getAllStore('productos');llenarFiltros();renderProductos();toast('Inventario importado')}e.target.value=''}
 async function reiniciarBase(){
