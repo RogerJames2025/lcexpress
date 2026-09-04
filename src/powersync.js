@@ -107,6 +107,16 @@ function supabaseClient() {
   return client;
 }
 
+
+function normalizeForSupabase(tableName, data = {}) {
+  const out = { ...data };
+  // SQLite/PowerSync stores booleans as 0/1. PostgreSQL expects JSON booleans.
+  if (tableName === 'clientes' && Object.prototype.hasOwnProperty.call(out, 'no_visitar')) {
+    out.no_visitar = out.no_visitar === true || Number(out.no_visitar || 0) === 1;
+  }
+  return out;
+}
+
 class LCConnector {
   async fetchCredentials() {
     const sb = supabaseClient();
@@ -168,10 +178,10 @@ class LCConnector {
           if (op.table === 'pedido_detalle' && op.opData?.pedido_id) {
             await ensurePedidoExists(op.opData.pedido_id);
           }
-          const { error } = await table.upsert({ id: op.id, ...(op.opData || {}) });
+          const { error } = await table.upsert({ id: op.id, ...normalizeForSupabase(op.table, op.opData || {}) });
           if (error) throw error;
         } else if (op.op === UpdateType.PATCH) {
-          const { error } = await table.update(op.opData || {}).eq('id', op.id);
+          const { error } = await table.update(normalizeForSupabase(op.table, op.opData || {})).eq('id', op.id);
           if (error) throw error;
         } else if (op.op === UpdateType.DELETE) {
           if (op.table === 'productos') {
@@ -251,7 +261,7 @@ function productoToDb(r) {
     actualizado: r.actualizado || new Date().toISOString(), eliminado_en: r.eliminado_en || null
   };
 }
-function clienteToApp(r) { return { ...r, estadoComercial:r.estado_comercial||'ACTIVO', fechaCierre:r.fecha_cierre||null, tipoComercio:r.tipo_comercio||'', noVisitar:Number(r.no_visitar||0)===1, motivoNoVisitar:r.motivo_no_visitar||'' }; }
+function clienteToApp(r) { return { ...r, estadoComercial:r.estado_comercial||'ACTIVO', fechaCierre:r.fecha_cierre||null, tipoComercio:r.tipo_comercio||'', noVisitar:r.no_visitar===true||Number(r.no_visitar||0)===1, motivoNoVisitar:r.motivo_no_visitar||'' }; }
 function clienteToDb(r) {
   return {
     codigo:r.codigo||'', nombre:r.nombre||'', apellido:r.apellido||'', telefono:r.telefono||'', telefono2:r.telefono2||'', correo:r.correo||'', dui:r.dui||null,

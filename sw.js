@@ -1,4 +1,4 @@
-const CACHE='lcexpress-v10.9.8';
+const CACHE='lcexpress-v10.9.9';
 const CORE=['/','/index.html','/manifest.webmanifest','/icon-192.png','/icon-512.png'];
 const EXTERNAL=[
 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
