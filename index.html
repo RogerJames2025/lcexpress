@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.9.9 PowerSync</title>
+<title>LCexpress v10.10.1 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -58,7 +58,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.9.9</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.10.1</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -243,7 +243,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 
 <!-- INVENTARIOS -->
 <dialog id="inventoriesDlg" class="xwide"><div class="modalhead"><b>Inventario / toma física</b><button class="btn" onclick="cerrarDlg('inventoriesDlg')">×</button></div><div class="modalbody">
-  <div class="notice" style="padding:12px;margin-bottom:12px">La toma de inventario puede realizarla cualquier usuario. No puede existir una ruta abierta. Solo un administrador activo puede aceptar el cuadre final mediante su contraseña.</div>
+  <div class="notice" style="padding:12px;margin-bottom:12px">Conteo colaborativo por producto: varios dispositivos pueden contar simultáneamente cantidades parciales del mismo artículo. LCexpress suma todos los aportes. Caja y maleta son solo referencias de ubicación y NO intervienen en el total físico. No puede existir una ruta abierta. Solo un administrador puede aceptar el cuadre final.</div>
   <div class="modalfoot" style="justify-content:flex-start;margin:0 0 12px"><button class="btn green" onclick="iniciarTomaInventario()">＋ Nueva toma de inventario</button><button class="btn" onclick="renderInventarios()">Actualizar</button></div>
   <div class="scroll" style="max-height:60vh"><table><thead><tr><th>Número</th><th>Inicio</th><th>Cierre</th><th>Usuario</th><th>Estado</th><th>Diferencias</th><th>Autorizó</th><th>Acciones</th></tr></thead><tbody id="inventoryHistoryRows"></tbody></table></div>
 </div></dialog>
@@ -251,9 +251,10 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 <dialog id="inventoryCountDlg" class="xwide"><div class="modalhead"><b id="inventoryCountTitle">Toma de inventario</b><button class="btn" onclick="cerrarTomaInventario()">×</button></div><div class="modalbody">
   <div id="inventoryCountSummary" class="customer-head"></div>
   <div id="inventoryParticipants" class="notice" style="padding:10px 12px;margin:0 0 10px"></div>
-  <div class="searchbox"><input id="inventorySearch" placeholder="Buscar producto por código o descripción…" oninput="renderInventarioConteo()"><button class="btn" onclick="guardarInventarioEnCurso()">💾 Guardar progreso</button></div>
-  <div class="scroll" style="max-height:58vh"><table style="min-width:1450px"><thead><tr><th>Código</th><th>Producto</th><th>Inventario inicial</th><th>Entradas</th><th>Vendido</th><th>Otras salidas</th><th>Esperado</th><th>Conteo físico</th><th>Diferencia</th><th>Último conteo</th></tr></thead><tbody id="inventoryCountRows"></tbody></table></div>
-  <div class="modalfoot"><button class="btn" onclick="cerrarTomaInventario()">Cerrar / continuar luego</button><button class="btn red" onclick="cancelarTomaInventario()">⛔ Cancelar toma</button><button class="btn green" onclick="solicitarCierreInventario()">Aceptar cuadre / inventario final</button></div>
+  <div class="searchbox"><input id="inventorySearch" placeholder="Buscar producto por nombre o código…" oninput="renderInventarioConteo()"><button class="btn" onclick="guardarInventarioEnCurso()">🔄 Actualizar / sincronizar</button></div>
+  <div class="notice" style="padding:9px 12px;margin:0 0 10px">Escriba una cantidad parcial y presione <b>＋ Sumar</b>. Puede repetirlo cuantas veces sea necesario; los aportes de todos los teléfonos se consolidan automáticamente.</div>
+  <div class="scroll" style="max-height:58vh"><table style="min-width:1280px"><thead><tr><th>Código</th><th>Producto</th><th>Esperado</th><th>Mi aporte nuevo</th><th>Mi total</th><th>Total físico acumulado</th><th>Diferencia</th><th>Último aporte</th><th></th></tr></thead><tbody id="inventoryCountRows"></tbody></table></div>
+  <div class="modalfoot"><button class="btn" onclick="cerrarTomaInventario()">Cerrar / continuar luego</button><button class="btn red" onclick="cancelarTomaInventario()">⛔ Cancelar toma</button><button class="btn amber" onclick="marcarPendientesCeroInventario()">0️⃣ Pendientes → 0</button><button class="btn green" onclick="solicitarCierreInventario()">Aceptar cuadre / inventario final</button></div>
 </div></dialog>
 
 <dialog id="inventoryViewDlg" class="xwide"><div class="modalhead"><b>Resultado de inventario</b><button class="btn" onclick="cerrarDlg('inventoryViewDlg')">×</button></div><div class="modalbody" id="inventoryViewBody"></div><div class="modalfoot" style="padding:0 17px 17px"><button id="invPreviewBtn" class="btn blue">👁️ Previsualizar PDF</button><button id="invPrintBtn" class="btn">🖨️ Imprimir</button><button id="invShareBtn" class="btn purple">📤 Compartir</button><button id="invDownloadBtn" class="btn red">⬇️ Descargar PDF</button></div></dialog>
@@ -472,50 +473,43 @@ const DEPARTAMENTOS=[...new Set(CATALOGO.map(x=>x.departamento))];
 const DB='LCexpressDB',DBV=5;
 const $=id=>document.getElementById(id), txt=v=>String(v??''), norm=v=>txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 
-/* Búsqueda inteligente de productos: admite varias palabras, palabras en distinto orden y pequeñas diferencias de escritura. */
+/* Búsqueda inteligente unificada v10.10.0: tolera acentos, guiones, espacios, orden de palabras y errores ortográficos moderados. */
 function distanciaLevenshtein(a,b){
   a=norm(a);b=norm(b);if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
   const prev=Array.from({length:b.length+1},(_,i)=>i),cur=new Array(b.length+1);
   for(let i=1;i<=a.length;i++){cur[0]=i;for(let j=1;j<=b.length;j++){const c=a[i-1]===b[j-1]?0:1;cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+c)}for(let j=0;j<=b.length;j++)prev[j]=cur[j]}
   return prev[b.length];
 }
-function coincidenciaToken(token,texto){
-  if(!token)return 0;texto=norm(texto);if(!texto)return 0;
-  if(texto===token)return 120;
-  if(texto.startsWith(token))return 95;
-  if(texto.includes(token))return 80;
-  const palabras=texto.split(/[^a-z0-9]+/).filter(Boolean);
-  let mejor=0;
-  for(const w of palabras){
-    if(w===token)mejor=Math.max(mejor,110);
-    else if(w.startsWith(token)||token.startsWith(w))mejor=Math.max(mejor,90);
-    else if(token.length>=4&&w.length>=4){const d=distanciaLevenshtein(token,w);if(d===1)mejor=Math.max(mejor,68);else if(d===2&&token.length>=7)mejor=Math.max(mejor,52)}
+function textoBusqueda(v){return norm(v).replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
+function digitosBusqueda(v){return String(v??'').replace(/\D/g,'')}
+function limpiarCodigoProducto(v){return String(v??'').trim().replace(/[\s\-_.]+/g,'').toUpperCase()}
+function codigoComparable(v){return limpiarCodigoProducto(v)}
+function toleranciaToken(t){const n=t.length;return n>=10?3:n>=7?2:n>=4?1:0}
+function tokenCoincideFlexible(token,palabra){if(!token||!palabra)return false;if(token===palabra||palabra.startsWith(token)||token.startsWith(palabra))return true;const tol=toleranciaToken(token);return tol>0&&distanciaLevenshtein(token,palabra)<=tol}
+function puntajeBusquedaFlexible(consulta,campos,{telefonos=[],codigos=[]}={}){
+  const q=textoBusqueda(consulta),qDigits=digitosBusqueda(consulta),qCode=codigoComparable(consulta);
+  if(!q&&!qDigits&&!qCode)return 1;
+  const textos=(campos||[]).map(textoBusqueda).filter(Boolean),palabras=textos.flatMap(x=>x.split(' ').filter(Boolean));
+  const cods=(codigos||[]).map(codigoComparable).filter(Boolean),phones=(telefonos||[]).map(digitosBusqueda).filter(Boolean);let score=0;
+  if(qCode.length>=3){for(const c of cods){if(c===qCode)score+=4000;else if(c.startsWith(qCode))score+=1800;else if(c.includes(qCode))score+=1200}}
+  if(qDigits.length>=4){for(const ph of phones){if(ph===qDigits)score+=3000;else if(ph.includes(qDigits)||qDigits.includes(ph))score+=1700}}
+  if(q){if(textos.some(x=>x===q))score+=1900;else if(textos.some(x=>x.includes(q)))score+=950;
+    const tokens=q.split(' ').filter(Boolean);let matched=0,totalQuality=0;
+    for(const t of tokens){let best=0;for(const w of palabras){if(t===w)best=Math.max(best,130);else if(w.startsWith(t)||t.startsWith(w))best=Math.max(best,105);else{const tol=toleranciaToken(t),d=tol?distanciaLevenshtein(t,w):99;if(d<=tol)best=Math.max(best,88-d*10)}}if(best){matched++;totalQuality+=best}}
+    if(matched===tokens.length)score+=800+totalQuality;else if(matched>0)score+=matched*90-(tokens.length-matched)*190;
   }
-  return mejor;
-}
-function puntajeBusquedaProducto(p,consulta){
-  const q=norm(consulta).replace(/\s+/g,' ');if(!q)return 1;
-  const codigo=norm(p.codigo),descripcion=norm(p.descripcion),categoria=norm(p.categoria),caja=norm(p.caja),maleta=norm(p.maleta);
-  const todo=[codigo,descripcion,categoria,caja,maleta].filter(Boolean).join(' ');
-  let score=0;
-  if(codigo&&codigo===q)score+=2000;else if(codigo&&codigo.startsWith(q))score+=1300;else if(codigo&&codigo.includes(q))score+=900;
-  if(descripcion===q)score+=1500;else if(descripcion.startsWith(q))score+=900;else if(descripcion.includes(q))score+=650;
-  const tokens=q.split(' ').filter(Boolean);let encontrados=0;
-  for(const token of tokens){
-    const td=coincidenciaToken(token,descripcion),tc=coincidenciaToken(token,codigo),tg=coincidenciaToken(token,todo);
-    const mejor=Math.max(td,tc,tg);if(mejor>0){encontrados++;score+=mejor+(td?35:0)+(tc?60:0)}
-  }
-  if(tokens.length>1&&encontrados===tokens.length)score+=500+tokens.length*60;
-  else if(tokens.length>1&&encontrados>0)score+=encontrados*25-(tokens.length-encontrados)*120;
-  return score>0?score:-1;
+  return score>0?score:-1
 }
 function ordenarProductosPorBusqueda(lista,consulta){
-  const q=norm(consulta).replace(/\s+/g,' ');
-  if(!q)return [...lista].sort((a,b)=>txt(a.descripcion).localeCompare(txt(b.descripcion),'es',{sensitivity:'base'}));
-  return lista.map(p=>({p,score:puntajeBusquedaProducto(p,q)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||txt(a.p.descripcion).localeCompare(txt(b.p.descripcion),'es',{sensitivity:'base'})).map(x=>x.p);
+  const q=txt(consulta);if(!textoBusqueda(q)&&!codigoComparable(q))return [...lista].sort((a,b)=>txt(a.descripcion).localeCompare(txt(b.descripcion),'es',{sensitivity:'base'}));
+  return lista.map(p=>({p,score:puntajeBusquedaFlexible(q,[p.descripcion,p.categoria,p.caja,p.maleta,p.notas],{codigos:[p.codigo]})})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||txt(a.p.descripcion).localeCompare(txt(b.p.descripcion),'es',{sensitivity:'base'})).map(x=>x.p);
+}
+function ordenarClientesPorBusqueda(lista,consulta){
+  const q=txt(consulta);if(!textoBusqueda(q)&&!digitosBusqueda(q))return [...lista].sort((a,b)=>(a.apellido+' '+a.nombre).localeCompare(b.apellido+' '+b.nombre,'es',{sensitivity:'base'}));
+  return lista.map(c=>({c,score:puntajeBusquedaFlexible(q,[c.codigo,c.nombre,c.apellido,`${c.nombre||''} ${c.apellido||''}`,`${c.apellido||''} ${c.nombre||''}`,c.comercio,tipoComercioCliente(c),c.correo,c.direccion,c.ruta,c.departamento,c.municipio,c.distrito,c.estadoComercial,c.estado_comercial,motivoNoVisitar(c),clienteNoVisitar(c)?'NO VISITAR':''],{telefonos:[c.telefono,c.telefono2],codigos:[c.codigo]})})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||(a.c.apellido+' '+a.c.nombre).localeCompare(b.c.apellido+' '+b.c.nombre,'es',{sensitivity:'base'})).map(x=>x.c)
 }
 const esc=s=>txt(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-let productos=[],clientes=[],pedidos=[],rutas=[],inventarios=[],inventarioDetalle=[],inventarioParticipantes=[],inventarioMovimientos=[],settings={},perfilesVendedores=[],catalogCategorias=[],catalogCajas=[],catalogMaletas=[],catalogos={categorias_producto:[],cajas:[],maletas:[]},seleccionadoId=null,activeRoute=null,currentOrderItems=[],currentOrderClient=null,currentOrderOriginal=null;
+let productos=[],clientes=[],pedidos=[],rutas=[],inventarios=[],inventarioDetalle=[],inventarioParticipantes=[],inventarioMovimientos=[],inventarioAportes=[],settings={},perfilesVendedores=[],catalogCategorias=[],catalogCajas=[],catalogMaletas=[],catalogos={categorias_producto:[],cajas:[],maletas:[]},seleccionadoId=null,activeRoute=null,currentOrderItems=[],currentOrderClient=null,currentOrderOriginal=null;
 let currentInventory=null,inventoryHeartbeatTimer=null,lastAutoInventoryId=null,inventoryAutoDismissedId=null,inventorySaveBusy=false,inventoryFinalizing=false,inventoryCreateBusy=false,bulkItems=[],ajusteAutorizadoContext=null,pendingAdminAuth=null,paymentContext=null,pdfPreviewUrl=null,pendingCancelOrderId=null,orderSaveLock=false,currentOrderSaveId=null;
 
 function openDB(){return Promise.resolve(window.LCCloud?.db||null)}
@@ -559,7 +553,7 @@ async function getAllStore(store){
   if(c){try{const rows=await c.getAll(store);snapshotStore(store,rows);return rows}catch(e){console.warn('Lectura PowerSync falló; usando snapshot local',store,e)}}
   return getOfflineStore(store);
 }
-const SYNCABLE_STORES=new Set(['productos','clientes','pedidos','rutas','settings','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','categorias_producto','cajas','maletas','perfiles']);
+const SYNCABLE_STORES=new Set(['productos','clientes','pedidos','rutas','settings','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','inventario_aportes','categorias_producto','cajas','maletas','perfiles']);
 async function rawPutStore(store,obj){return putStore(store,obj)}
 async function rawDelStore(store,id){return delStore(store,id)}
 async function enqueueSync(){return}
@@ -658,7 +652,7 @@ async function mostrarEstadoCloud(){
   let st={pending:0,connected:false,hasSynced:false};
   try{const c=await esperarCloud();st=c.syncDiagnostics?await c.syncDiagnostics():await c.syncStatus()}catch(e){st.diagnosticError=String(e?.message||e)}
   const au=await diagnosticoAuthNube();
-  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.9.9<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
+  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.10.1<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
   $('cloudDlg').showModal();
 }
 async function sincronizarAhora(){
@@ -711,6 +705,7 @@ async function loadAll(opts={}){
   try{inventarioDetalle=await getAllStore('inventario_detalle')}catch{inventarioDetalle=[]}
   try{inventarioParticipantes=await getAllStore('inventario_participantes')}catch{inventarioParticipantes=[]}
   try{inventarioMovimientos=await getAllStore('inventario_movimientos')}catch{inventarioMovimientos=[]}
+  try{inventarioAportes=await getAllStore('inventario_aportes')}catch{inventarioAportes=[]}
   const ss=await getAllStore('settings');
   settings=ss.find(x=>x.id==='config')||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1,clienteNumero:1,rutaNumero:1,inventarioNumero:1};
   let synced=false;try{synced=(await (await esperarCloud()).syncStatus()).hasSynced}catch{}
@@ -722,7 +717,7 @@ async function loadAll(opts={}){
   try{catalogos.maletas=await getAllStore('maletas');catalogMaletas=catalogos.maletas.filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogos.maletas=[];catalogMaletas=[]}
   activeRoute=rutas.find(r=>r.estado==='ABIERTA')||null;
   snapshotStore('productos',productos);snapshotStore('clientes',clientes);snapshotStore('pedidos',pedidos);snapshotStore('rutas',rutas);
-  snapshotStore('inventarios',inventarios);snapshotStore('inventario_detalle',inventarioDetalle);snapshotStore('inventario_participantes',inventarioParticipantes);snapshotStore('inventario_movimientos',inventarioMovimientos);
+  snapshotStore('inventarios',inventarios);snapshotStore('inventario_detalle',inventarioDetalle);snapshotStore('inventario_participantes',inventarioParticipantes);snapshotStore('inventario_movimientos',inventarioMovimientos);snapshotStore('inventario_aportes',inventarioAportes);
   snapshotStore('settings',[settings]);snapshotStore('categorias_producto',catalogos.categorias_producto||[]);snapshotStore('cajas',catalogos.cajas||[]);snapshotStore('maletas',catalogos.maletas||[]);
 }
 let liveSyncStarted=false,liveSyncTimer=null,liveSyncBusy=false;
@@ -749,7 +744,7 @@ function programarRefrescoPowerSync(){clearTimeout(liveSyncTimer);liveSyncTimer=
 async function activarActualizacionTiempoReal(){
   if(liveSyncStarted)return;liveSyncStarted=true;
   const c=await esperarCloud();
-  const tablas=['productos','clientes','rutas','pedidos','pedido_detalle','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','configuracion','perfiles','categorias_producto','cajas','maletas'];
+  const tablas=['productos','clientes','rutas','pedidos','pedido_detalle','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','inventario_aportes','configuracion','perfiles','categorias_producto','cajas','maletas'];
   for(const tabla of tablas){
     try{c.db.watch(`SELECT id FROM ${tabla}`,[],{onResult:programarRefrescoPowerSync,onError:e=>console.warn('Watch '+tabla,e)})}catch(e){console.warn('No se pudo activar watch para '+tabla,e)}
   }
@@ -803,7 +798,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
   });
-  navigator.serviceWorker.register('/sw.js?v=10.9.9',{updateViaCache:'none'}).then(reg=>{
+  navigator.serviceWorker.register('/sw.js?v=10.10.1',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
@@ -876,8 +871,13 @@ function nuevoProducto(){if(!exigirAdmin())return;['pid','codigo','categoria','d
 function editarSeleccionado(){if(!exigirAdmin())return;const p=exigirSeleccion('editarlo');if(p)editarProducto(p.id)}
 function seleccionarYEditar(id){if(!exigirAdmin())return;seleccionadoId=id;renderProductos();editarProducto(id)}
 function editarProducto(id){const p=productos.find(x=>x.id===id);if(!p)return;['codigo','categoria','descripcion','cantidad','caja','maleta','cantidadMaleta','notas'].forEach(k=>$(k).value=p[k]??'');$('precio').value=formatoPrecio(p.precio,decimalesPrecio(p),false);$('pid').value=p.id;actualizarCatalogosProducto();$('dlgTitle').textContent='Modificar producto';$('productDlg').showModal()}
-async function guardarProducto(e){e.preventDefault();const cat=validarCatalogosProducto();if(!cat)return;const id=$('pid').value||idgen('p');const p={id,codigo:$('codigo').value.trim(),descripcion:$('descripcion').value.trim().toUpperCase(),categoria:cat.categoria,cantidad:+$('cantidad').value||0,precio:parsePrecio4($('precio').value),precioDecimales:detectarDecimalesPrecio($('precio').value),caja:cat.caja,maleta:cat.maleta,cantidadMaleta:+$('cantidadMaleta').value||0,notas:$('notas').value.trim(),actualizado:new Date().toISOString()};const eraNuevo=!$('pid').value;await putStore('productos',p);if(eraNuevo&&p.cantidad>0)await registrarMovimientoInventario({producto:p,tipo:'ALTA_PRODUCTO_INICIAL',cantidad:p.cantidad,motivo:'Existencia inicial al crear producto'});productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');toast('Producto guardado')}
-function borrarSeleccionado(){if(!exigirAdmin())return;const p=exigirSeleccion('desactivarlo');if(p)borrarProducto(p.id)}
+async function guardarProducto(e){
+  e.preventDefault();const cat=validarCatalogosProducto();if(!cat)return;
+  const id=$('pid').value||idgen('p'),original=productos.find(x=>x.id===id)||null,codigoLimpio=limpiarCodigoProducto($('codigo').value);
+  if(codigoLimpio){const dup=productos.find(x=>x.id!==id&&codigoComparable(x.codigo)===codigoComparable(codigoLimpio));if(dup){alert(`El código ${codigoLimpio} ya está asignado a otro producto:\n\n${dup.descripcion}\n\nLCexpress no permitirá guardar otro producto con el mismo código.`);return}}
+  const p={id,codigo:codigoLimpio,descripcion:$('descripcion').value.trim().toUpperCase(),categoria:cat.categoria,cantidad:+$('cantidad').value||0,precio:parsePrecio4($('precio').value),precioDecimales:detectarDecimalesPrecio($('precio').value),caja:cat.caja,maleta:cat.maleta,cantidadMaleta:+$('cantidadMaleta').value||0,notas:$('notas').value.trim(),actualizado:new Date().toISOString()};
+  const eraNuevo=!original;await putStore('productos',p);if(eraNuevo&&p.cantidad>0)await registrarMovimientoInventario({producto:p,tipo:'ALTA_PRODUCTO_INICIAL',cantidad:p.cantidad,motivo:'Existencia inicial al crear producto'});productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');toast('Producto guardado')
+}
 function seleccionarYEliminar(id){if(!exigirAdmin())return;seleccionadoId=id;renderProductos();borrarProducto(id)}
 async function borrarProducto(id){const p=productos.find(x=>x.id===id);if(!p)return;if(!confirm(`¿Desactivar este producto?\n\n${p.descripcion}\nCódigo: ${p.codigo||'S/C'}\nCantidad: ${+p.cantidad||0}\n\nEl producto dejará de aparecer para nuevas operaciones, pero conservará todos sus pedidos, movimientos e inventarios históricos.`))return;p.eliminado_en=new Date().toISOString();p.actualizado=p.eliminado_en;await putStore('productos',p);productos=await getAllStore('productos');seleccionadoId=null;llenarFiltros();renderProductos();toast('Producto desactivado; historial conservado')}
 function inventarioEnCurso(){return inventarios.find(x=>x.estado==='EN_CONTEO'||x.estado==='PENDIENTE_AUTORIZACION')||null}
@@ -960,7 +960,7 @@ function cargarDistritos(sel=''){
 function siguienteClienteCodigo(){const nums=clientes.map(c=>parseInt(txt(c.codigo).replace(/\D/g,''))||0);return 'C'+String(Math.max(0,...nums)+1).padStart(6,'0')}
 function actualizarRutasSugeridas(){if(!$('rutasSugeridas'))return;const rs=uniqueSorted(clientes.map(c=>c.ruta));$('rutasSugeridas').innerHTML=rs.map(x=>`<option value="${esc(x)}"></option>`).join('')}
 function abrirClientes(){renderClientes();$('clientsDlg').showModal()}
-function clientesFiltrados(qid='clientSearch'){const q=norm($(qid)?.value||'');return clientes.filter(c=>!q||[c.codigo,c.nombre,c.apellido,c.comercio,tipoComercioCliente(c),c.telefono,c.telefono2,c.correo,c.direccion,c.ruta,c.departamento,c.municipio,c.distrito,c.estadoComercial,c.estado_comercial,motivoNoVisitar(c),clienteNoVisitar(c)?'NO VISITAR':''].some(x=>norm(x).includes(q))).sort((a,b)=>(a.apellido+' '+a.nombre).localeCompare(b.apellido+' '+b.nombre,'es',{sensitivity:'base'}))}
+function clientesFiltrados(qid='clientSearch'){return ordenarClientesPorBusqueda(clientes,$(qid)?.value||'')}
 function estadoCliente(c){return c.estadoComercial||c.estado_comercial||'ACTIVO'}
 function estadoClienteBadge(c){const e=estadoCliente(c);return e==='ACTIVO'?'<span class="tag green">ACTIVO</span>':e==='CERRADO_TEMPORAL'?'<span class="tag amber">CERRADO TEMPORAL</span>':'<span class="tag red">CERRADO DEFINITIVO</span>'}
 function renderClientes(){const list=clientesFiltrados();$('clientRows').innerHTML=list.length?list.map(c=>{const nv=clienteNoVisitar(c);return `<tr class="${nv?'client-no-visit':''}" style="${estadoCliente(c)!=='ACTIVO'?'opacity:.72':''}"><td class="code">${esc(c.codigo)}</td><td><b>${esc(c.nombre)} ${esc(c.apellido)}</b>${nv?`<br><span class="no-visit-badge">🚫 NO VISITAR</span>`:''}</td><td>${esc(c.comercio)}</td><td>${tipoComercioCliente(c)?`<span class="tag">${esc(tipoComercioCliente(c))}</span>`:'—'}</td><td>${nv?`<span class="no-visit-badge" title="${esc(motivoNoVisitar(c))}">NO VISITAR</span>`:'<span class="visit-ok-badge">VISITAR</span>'}</td><td>${estadoClienteBadge(c)}</td><td>${esc(c.telefono)}${c.telefono2?`<br><small>${esc(c.telefono2)}</small>`:''}</td><td>${esc(c.departamento)}</td><td>${esc(c.municipio)}</td><td>${esc(c.distrito)}</td><td><span class="tag green">${esc(c.ruta)}</span></td><td><button class="rowbtn" onclick="verCliente('${c.id}')">👁️</button>${c.ubicacion?`<button class="rowbtn" onclick="abrirGoogleMapsCliente('${c.id}')" title="Abrir en Google Maps">🗺️</button>`:''}<button class="rowbtn" onclick="editarCliente('${c.id}')">✏️</button><button class="rowbtn" onclick="eliminarCliente('${c.id}')">🗑️</button></td></tr>`}).join(''):`<tr><td colspan="12" class="empty">No hay clientes.</td></tr>`}
@@ -1028,7 +1028,6 @@ function opcionesVendedor(selected){const arr=[...perfilesVendedores];if(current
 async function agregarProductoPedido(id,{skipStockCheck=false}={}){const p=productos.find(x=>x.id===id);if(!p)return false;const disponible=stockDisponibleParaPedido(id);if(!skipStockCheck&&disponible<=0){alert('Este producto está en existencia CERO y no se puede vender.\n\nUn administrador debe autorizar y ajustar la cantidad antes de continuar.');await autorizarAjusteDesdePedido(id);return false}let ix=currentOrderItems.findIndex(x=>x.productoId===id);if(ix>=0){if(!skipStockCheck&&currentOrderItems[ix].cantidad+1>disponible){alert('La cantidad solicitada supera la existencia disponible.');await autorizarAjusteDesdePedido(id);return false}currentOrderItems[ix].cantidad+=1}else{currentOrderItems.push({productoId:id,codigo:p.codigo,descripcion:p.descripcion,cantidad:1,precio:+p.precio||0,precioDecimales:decimalesPrecio(p),vendedorId:vendedorIdActual(),vendedorNombre:vendedorNombreActual()});ix=currentOrderItems.length-1}$('orderProductSearch').value='';$('orderProductResults').innerHTML='';renderOrderItems();setTimeout(()=>{const el=$('orderPrice_'+ix);if(el){el.focus();el.select()}},60);return true}
 
 let barcodeScanner=null,barcodeScannerTimeout=null,barcodeProcesando=false,barcodeStream=null,barcodeNativeTimer=null;
-function codigoComparable(v){return String(v??'').trim().replace(/\s+/g,'').toUpperCase()}
 async function abrirEscanerPedido(){
  if(!currentOrderClient){alert('Debe abrir un pedido antes de escanear productos.');return}
  if(!window.isSecureContext&&location.protocol!=='file:'){alert('La cámara requiere que LCexpress esté publicada con HTTPS.\n\nMientras tanto, ingrese el código manualmente en el buscador.');$('orderProductSearch').focus();return}
@@ -1061,13 +1060,11 @@ async function iniciarEscanerNativo(){
 }
 
 async function codigoEscaneado(texto){
- if(barcodeProcesando)return;
- barcodeProcesando=true;
- const codigo=codigoComparable(texto);
- const p=productos.find(x=>codigoComparable(x.codigo)===codigo);
- await detenerEscanerPedido();
- cerrarDlg('barcodeDlg');
- if(p){const ok=await agregarProductoPedido(p.id);if(ok)toast('Producto agregado: '+p.descripcion)}
+ if(barcodeProcesando)return;barcodeProcesando=true;
+ const codigo=codigoComparable(texto),matches=productos.filter(x=>codigoComparable(x.codigo)===codigo);
+ await detenerEscanerPedido();cerrarDlg('barcodeDlg');
+ if(matches.length===1){const p=matches[0],ok=await agregarProductoPedido(p.id);if(ok)toast('Producto agregado: '+p.descripcion)}
+ else if(matches.length>1){$('orderProductSearch').value=String(texto||'').trim();renderOrderProductSearch();alert(`ATENCIÓN: el código ${texto} está asignado a ${matches.length} productos.\n\nLCexpress no seleccionó ninguno para evitar vender el producto equivocado. Corrija el código duplicado en Productos.`);$('orderProductSearch').focus()}
  else{$('orderProductSearch').value=String(texto||'').trim();renderOrderProductSearch();alert(`Se leyó el código ${texto}, pero no existe un producto con ese código.\n\nBúsquelo o ingréselo manualmente.`);$('orderProductSearch').focus()}
  barcodeProcesando=false;
 }
@@ -1124,7 +1121,25 @@ function buscarDuplicadoReciente(items,total){if(currentOrderOriginal)return nul
 async function autorizarDuplicadoSiExiste(items,total){const dup=buscarDuplicadoReciente(items,total);if(!dup)return true;alert(`⚠️ Posible pedido duplicado\n\nYa existe ${dup.numero} para este mismo cliente, con los mismos productos, cantidades y total, creado hace menos de 2 minutos.\n\nPara evitar duplicaciones accidentales, se requiere autorización de un administrador para guardar otro pedido idéntico.`);const auth=await solicitarAutorizacionAdmin('Autorizar pedido posiblemente duplicado');return!!auth}
 function setCobroProcesando(activo,mensaje=''){orderSaveLock=activo;$('payAcceptBtn').disabled=activo;$('payAcceptBtn').textContent=activo?'⏳ Procesando…':'✅ Cobrar y guardar';$('paymentProcessing').style.display=activo?'block':'none';if(mensaje)$('paymentProcessing').textContent=mensaje}
 async function confirmarCobroPedido(){if(orderSaveLock)return;const r=resumenPagoActual(),d=paymentContext?.decimales||2;$('paymentError').style.display='none';if(r.nonCashExcess>0){$('paymentError').textContent='Tarjeta y transferencia no pueden sumar más que el total del pedido.';$('paymentError').style.display='block';return}if(!r.ok){$('paymentError').textContent=`El pago todavía no está completo. Falta ${formatoPrecio(desdeUnidades4(r.missingU),d)}.`;$('paymentError').style.display='block';return}const items=currentOrderItems.map(i=>({...i,precioDecimales:decimalesPrecio(i),subtotal:subtotalExacto(i.cantidad,i.precio)})),total=totalExactoItems(currentOrderItems);if(!(await autorizarDuplicadoSiExiste(items,total)))return;setCobroProcesando(true,'⏳ Guardando pedido, actualizando inventario y registrando el pago…');try{const eraEdicion=!!currentOrderOriginal,o=await guardarPedidoFinal(r);cerrarDlg('paymentDlg');cerrarDlg('orderDlg');toast(eraEdicion?'Pedido modificado':'Pedido guardado');currentOrderItems=[];currentOrderClient=null;currentOrderOriginal=null;currentOrderSaveId=null;paymentContext=null;setTimeout(()=>compartirPedidoPDF(o,{automatico:true}),250)}catch(err){console.error('Error al cobrar/guardar pedido:',err);$('paymentError').textContent='No se pudo completar el cobro: '+(err?.message||String(err))+'. El pedido permanece abierto; puede corregir el problema y volver a intentar.';$('paymentError').style.display='block'}finally{setCobroProcesando(false)}}
-async function guardarPedidoFinal(pago){if(!validarPedidoParaCobro())throw new Error('El pedido ya no cumple las validaciones para cobrar');const editing=!!currentOrderOriginal,reason=txt($('orderEditReason').value).trim(),total=totalExactoItems(currentOrderItems),items=currentOrderItems.map(i=>({...i,precioDecimales:decimalesPrecio(i),subtotal:subtotalExacto(i.cantidad,i.precio)}));let o;const pagoData={formaPago:pago.formaPago,pagoEfectivo:pago.pagoEfectivo,pagoTarjeta:pago.pagoTarjeta,pagoTransferencia:pago.pagoTransferencia,efectivoRecibido:pago.efectivoRecibido,cambio:pago.cambio};if(editing){o={...currentOrderOriginal,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),...pagoData,comprobante:normalizarComprobante(paymentContext?.comprobante||currentOrderOriginal.comprobante||'RECIBO'),modificado:true,modificaciones:[...(currentOrderOriginal.modificaciones||[]),{fecha:new Date().toISOString(),motivo:reason}],actualizado:new Date().toISOString()};await putStore('pedidos',o);await aplicarInventarioPedido(currentOrderOriginal.items,items,o.id)}else{const id=currentOrderSaveId||idgen('o');currentOrderSaveId=id;o={id,numero:formatPedido(settings.pedidoNumero||1),fecha:new Date().toISOString(),clienteId:currentOrderClient.id,clienteCodigo:currentOrderClient.codigo||'',clienteNombre:currentOrderClient.nombre+' '+currentOrderClient.apellido,clienteComercio:currentOrderClient.comercio||'',clienteTelefono:currentOrderClient.telefono,clienteTelefono2:currentOrderClient.telefono2||'',clienteCorreo:currentOrderClient.correo||'',clienteDireccion:currentOrderClient.direccion||'',departamento:currentOrderClient.departamento,municipio:currentOrderClient.municipio,distrito:currentOrderClient.distrito,clienteRuta:currentOrderClient.ruta,rutaId:activeRoute.id,rutaNombre:activeRoute.nombre,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),...pagoData,comprobante:normalizarComprobante(paymentContext?.comprobante||currentOrderClient.comprobante||'RECIBO'),modificado:false,modificaciones:[]};await putStore('pedidos',o);await aplicarInventarioPedido([],items,o.id);settings.pedidoNumero=(settings.pedidoNumero||1)+1;await putStore('settings',settings)}pedidos=await getAllStore('pedidos');actualizarRutaBar();return o}
+async function guardarPedidoFinal(pago){
+  if(!validarPedidoParaCobro())throw new Error('El pedido ya no cumple las validaciones para cobrar');
+  if(!navigator.onLine)throw new Error('Para proteger el inventario cuando varios dispositivos venden al mismo tiempo, el cobro final requiere conexión a Internet. Puede mantener el pedido abierto y cobrarlo cuando vuelva la conexión.');
+  const editing=!!currentOrderOriginal,reason=txt($('orderEditReason').value).trim(),total=totalExactoItems(currentOrderItems),items=currentOrderItems.map(i=>({...i,precioDecimales:decimalesPrecio(i),subtotal:subtotalExacto(i.cantidad,i.precio)}));
+  let o;const pagoData={formaPago:pago.formaPago,pagoEfectivo:pago.pagoEfectivo,pagoTarjeta:pago.pagoTarjeta,pagoTransferencia:pago.pagoTransferencia,efectivoRecibido:pago.efectivoRecibido,cambio:pago.cambio};
+  if(editing){o={...currentOrderOriginal,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),...pagoData,comprobante:normalizarComprobante(paymentContext?.comprobante||currentOrderOriginal.comprobante||'RECIBO'),modificado:true,modificaciones:[...(currentOrderOriginal.modificaciones||[]),{fecha:new Date().toISOString(),motivo:reason}],actualizado:new Date().toISOString()}}
+  else{const id=currentOrderSaveId||idgen('o');currentOrderSaveId=id;o={id,numero:formatPedido(settings.pedidoNumero||1),fecha:new Date().toISOString(),clienteId:currentOrderClient.id,clienteCodigo:currentOrderClient.codigo||'',clienteNombre:currentOrderClient.nombre+' '+currentOrderClient.apellido,clienteComercio:currentOrderClient.comercio||'',clienteTelefono:currentOrderClient.telefono,clienteTelefono2:currentOrderClient.telefono2||'',clienteCorreo:currentOrderClient.correo||'',clienteDireccion:currentOrderClient.direccion||'',departamento:currentOrderClient.departamento,municipio:currentOrderClient.municipio,distrito:currentOrderClient.distrito,clienteRuta:currentOrderClient.ruta,rutaId:activeRoute.id,rutaNombre:activeRoute.nombre,items,total,itemsTotal:items.reduce((a,i)=>a+i.cantidad,0),...pagoData,comprobante:normalizarComprobante(paymentContext?.comprobante||currentOrderClient.comprobante||'RECIBO'),modificado:false,modificaciones:[],actualizado:new Date().toISOString()}}
+  const payload={
+    id:o.id,numero:o.numero,fecha:o.fecha,cliente_id:o.clienteId||null,cliente_nombre:o.clienteNombre||'',cliente_comercio:o.clienteComercio||'',cliente_telefono:o.clienteTelefono||'',cliente_telefono2:o.clienteTelefono2||'',cliente_correo:o.clienteCorreo||'',cliente_direccion:o.clienteDireccion||'',departamento:o.departamento||'',municipio:o.municipio||'',distrito:o.distrito||'',cliente_ruta:o.clienteRuta||'',ruta_id:o.rutaId||null,ruta_nombre:o.rutaNombre||'',comprobante:o.comprobante||'RECIBO',total:Number(o.total||0),items_total:Number(o.itemsTotal||0),modificado:!!o.modificado,modificaciones:o.modificaciones||[],forma_pago:o.formaPago||'EFECTIVO',pago_efectivo:Number(o.pagoEfectivo||0),pago_tarjeta:Number(o.pagoTarjeta||0),pago_transferencia:Number(o.pagoTransferencia||0),efectivo_recibido:Number(o.efectivoRecibido||0),cambio:Number(o.cambio||0),actualizado:o.actualizado||new Date().toISOString()
+  };
+  const rpcItems=items.map((i,ix)=>({detalle_id:i.detalleId||`${o.id}-d-${ix+1}-${i.productoId||'x'}`,producto_id:i.productoId,codigo:i.codigo||'',descripcion:i.descripcion||'',cantidad:Number(i.cantidad||0),precio:Number(i.precio||0),precio_decimales:decimalesPrecio(i),subtotal:Number(i.subtotal??subtotalExacto(i.cantidad,i.precio)),vendedor_id:i.vendedorId||null,vendedor_nombre:i.vendedorNombre||''}));
+  const {data,error}=await sb.rpc('lc_guardar_pedido_atomico',{p_pedido:payload,p_items:rpcItems,p_usuario_id:currentProfile?.id||authSession?.user?.id||null,p_device_id:getDeviceId()});
+  if(error){const msg=error.message||String(error);if(msg.includes('STOCK_INSUFICIENTE'))throw new Error(msg.replace('STOCK_INSUFICIENTE:','Existencia insuficiente:'));throw error}
+  // El servidor ya reservó/descontó el stock con bloqueo por producto. Guardamos el mismo pedido localmente para respuesta inmediata, pero NO volvemos a tocar cantidades locales.
+  await putStore('pedidos',o);
+  if(!editing){settings.pedidoNumero=(settings.pedidoNumero||1)+1;await putStore('settings',settings)}
+  try{const c=await esperarCloud();await c.syncNow({timeoutMs:15000});await loadAll({permitirSemilla:false})}catch(e){console.warn('Pedido guardado en servidor; PowerSync terminará de reflejar existencias.',e)}
+  pedidos=await getAllStore('pedidos');llenarFiltros();renderProductos();actualizarRutaBar();return o
+}
 function abrirHistorialPedidos(){renderHistorialPedidos();$('ordersHistoryDlg').showModal()}
 function renderHistorialPedidos(){const q=norm($('orderHistorySearch').value),list=pedidos.filter(o=>!q||[o.numero,o.clienteCodigo,clientes.find(c=>c.id===o.clienteId)?.codigo,o.clienteNombre,o.clienteComercio,o.rutaNombre,o.estado,o.motivoAnulacion,o.comprobante,abreviaturaComprobante(o.comprobante)].some(x=>norm(x).includes(q))).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));$('orderHistoryRows').innerHTML=list.length?list.map(o=>{const anul=pedidoAnulado(o);const estado=anul?'<span class="tag red">ANULADO</span>':(o.modificado?'<span class="tag purple">MODIFICADO</span>':'<span class="tag green">ORIGINAL</span>');return `<tr${anul?' style="opacity:.72"':''}><td><b>${esc(o.numero)}</b>${anul?'<br><small style="color:#991b1b">Documento anulado</small>':''}</td><td>${badgeComprobante(o.comprobante)}</td><td>${dateText(o.fecha)}</td><td>${esc(o.clienteNombre)}</td><td>${esc(o.clienteComercio)}</td><td>${esc(o.rutaNombre)}</td><td>${o.itemsTotal}</td><td>${anul?`<s>${moneyPedido(o.total,o.items||[])}</s><br><b>$0.00 válido</b>`:moneyPedido(o.total,o.items||[])}</td><td>${estado}</td><td><button class="rowbtn" title="Ver" onclick="verPedido('${o.id}')">👁️</button>${!anul?`<button class="rowbtn" title="Editar" onclick="editarPedido('${o.id}')">✏️</button><button class="rowbtn" title="Anular" onclick="solicitarAnulacionPedido('${o.id}')">⛔</button>`:''}<button class="rowbtn" title="Compartir" onclick="compartirPedidoPorId('${o.id}')">📤</button><button class="rowbtn" title="Descargar PDF" onclick="descargarPedido('${o.id}')">⬇️</button></td></tr>`}).join(''):`<tr><td colspan="10" class="empty">No hay pedidos.</td></tr>`}
 function arrayPedidoSeguro(v){if(Array.isArray(v))return v;if(typeof v==='string'){try{const x=JSON.parse(v);return Array.isArray(x)?x:[]}catch(e){return []}}return []}
@@ -1151,19 +1166,17 @@ function solicitarAnulacionPedido(id){
 }
 async function confirmarAnulacionPedido(){
   const id=pendingCancelOrderId,o=pedidos.find(x=>x.id===id),motivo=txt($('cancelOrderReason').value).trim();
-  if(!o)return;if(pedidoAnulado(o)){cerrarDlg('cancelOrderDlg');alert('Este pedido ya fue anulado.');return}
+  if(!o)return;if(pedidoAnulado(o)){cerrarDlg('cancelOrderDlg');alert('Este pedido ya está anulado.');return}
   if(motivo.length<4){alert('Debe indicar el motivo de la anulación.');$('cancelOrderReason').focus();return}
+  if(!navigator.onLine){alert('La anulación requiere Internet para reintegrar el inventario de forma segura frente a ventas simultáneas.');return}
   let auth;
   if(esAdmin()) auth={id:currentProfile?.id||authSession?.user?.id||null,nombre:perfilNombre(currentProfile,authSession),email:currentProfile?.email||authSession?.user?.email||''};
   else {cerrarDlg('cancelOrderDlg');auth=await solicitarAutorizacionAdmin('Autorizar anulación del pedido '+o.numero);if(!auth){pendingCancelOrderId=null;return}}
   try{
-    const c=await esperarCloud();
-    if(!c.anularPedidoAtomic)throw new Error('El módulo local no contiene la actualización de anulación. Actualice la aplicación nuevamente.');
-    await c.anularPedidoAtomic({pedidoId:o.id,motivo,solicitadoPorId:currentProfile?.id||authSession?.user?.id||null,solicitadoPorNombre:perfilNombre(currentProfile,authSession),autorizadoPorId:auth?.id||null,autorizadoPorNombre:auth?.nombre||'',deviceId:getDeviceId()});
-    pendingCancelOrderId=null;cerrarDlg('cancelOrderDlg');
-    await loadAll({permitirSemilla:false});llenarFiltros();renderProductos();actualizarRutaBar();
-    if(dialogoAbierto('orderViewDlg'))cerrarDlg('orderViewDlg');
-    renderHistorialPedidos();toast('Pedido anulado. Existencias reintegradas al inventario.');
+    const {error}=await sb.rpc('lc_anular_pedido_atomico',{p_pedido_id:o.id,p_motivo:motivo,p_solicitado_por_id:currentProfile?.id||authSession?.user?.id||null,p_solicitado_por_nombre:perfilNombre(currentProfile,authSession),p_autorizado_por_id:auth?.id||null,p_autorizado_por_nombre:auth?.nombre||'',p_device_id:getDeviceId()});
+    if(error)throw error;pendingCancelOrderId=null;cerrarDlg('cancelOrderDlg');
+    const c=await esperarCloud();await c.syncNow({timeoutMs:15000});await loadAll({permitirSemilla:false});llenarFiltros();renderProductos();actualizarRutaBar();
+    if(dialogoAbierto('orderViewDlg'))cerrarDlg('orderViewDlg');renderHistorialPedidos();toast('Pedido anulado. Existencias reintegradas de forma segura.');
   }catch(e){console.error(e);alert('No se pudo anular el pedido: '+(e?.message||e))}
 }
 
@@ -1174,147 +1187,100 @@ function solicitarAutorizacionAdmin(titulo='Autorización de administrador'){if(
 function cancelarAutorizacionAdmin(){cerrarDlg('adminAuthDlg');if(pendingAdminAuth){pendingAdminAuth(null);pendingAdminAuth=null}}
 async function confirmarAutorizacionAdmin(e){e.preventDefault();const id=$('adminAuthUser').value,a=adminsActivos().find(x=>x.id===id),pass=$('adminAuthPassword').value;if(!a||!pass)return;const btn=$('adminAuthBtn');btn.disabled=true;btn.textContent='Validando…';$('adminAuthMsg').style.display='none';try{const temp=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lc-auth-'+Date.now()}});const {data,error}=await temp.auth.signInWithPassword({email:a.email,password:pass});if(error||data?.user?.id!==a.id)throw new Error('Contraseña incorrecta o usuario no autorizado.');try{await temp.auth.signOut({scope:'local'})}catch{}const result={id:a.id,nombre:[a.nombre,a.apellido].filter(Boolean).join(' '),email:a.email};cerrarDlg('adminAuthDlg');const r=pendingAdminAuth;pendingAdminAuth=null;if(r)r(result)}catch(err){$('adminAuthMsg').textContent=err?.message||'No se pudo validar la autorización.';$('adminAuthMsg').style.display='block'}finally{btn.disabled=false;btn.textContent='Autorizar'}}
 
-// ===================== INVENTARIO FÍSICO =====================
-const INV_DRAFT_PREFIX='lcexpress_inv_draft_';
-function leerBorradorInventario(invId){try{return JSON.parse(localStorage.getItem(INV_DRAFT_PREFIX+invId)||'{}')||{}}catch{return {}}}
-function guardarBorradorInventario(invId,draft){try{localStorage.setItem(INV_DRAFT_PREFIX+invId,JSON.stringify(draft||{}))}catch{}}
-function borrarBorradorInventario(invId){try{localStorage.removeItem(INV_DRAFT_PREFIX+invId)}catch{}}
-function valorConteoSeguro(d){
-  const draft=currentInventory?leerBorradorInventario(currentInventory.id)[d.id]:null;
-  if(draft&&draft.valor!==null&&draft.valor!==undefined)return Number(draft.valor);
-  // Un cero solo cuenta como captura real si existe marca de quién/cuándo contó.
-  if(d.contado_en&&(d.conteo_fisico!==null&&d.conteo_fisico!==undefined))return Number(d.conteo_fisico);
-  if(d.conteo_fisico!==null&&d.conteo_fisico!==undefined&&Number(d.conteo_fisico)!==0)return Number(d.conteo_fisico);
-  return null;
-}
-function conteoFueCapturado(d){return valorConteoSeguro(d)!==null}
-function guardarDraftDetalle(d,val){
-  if(!currentInventory)return;const draft=leerBorradorInventario(currentInventory.id);
-  draft[d.id]={valor:val,contado_en:new Date().toISOString(),contado_por_nombre:perfilNombre(currentProfile,authSession),device_id:getDeviceId()};
-  guardarBorradorInventario(currentInventory.id,draft);
-}
+// ===================== INVENTARIO FÍSICO COLABORATIVO v10.10.1 =====================
 function siguienteInventarioNumero(){return 'INV'+String(settings.inventarioNumero||1).padStart(6,'0')}
 function detallesInventario(id){return inventarioDetalle.filter(d=>d.inventario_id===id)}
+function aportesInventario(invId,pid=null){return inventarioAportes.filter(a=>a.inventario_id===invId&&(!pid||a.producto_id===pid)&&!a.eliminado_en)}
+function totalFisicoProducto(invId,pid){return aportesInventario(invId,pid).reduce((n,a)=>n+Number(a.cantidad||0),0)}
+function miTotalFisicoProducto(invId,pid){const dev=getDeviceId();return aportesInventario(invId,pid).filter(a=>a.device_id===dev).reduce((n,a)=>n+Number(a.cantidad||0),0)}
+function ultimoAporteProducto(invId,pid){return aportesInventario(invId,pid).sort((a,b)=>new Date(b.contado_en||b.actualizado||0)-new Date(a.contado_en||a.actualizado||0))[0]||null}
+function valorConteoSeguro(d){if(!d)return null;if(d.conteo_fisico!==null&&d.conteo_fisico!==undefined&&d.contado_en)return Number(d.conteo_fisico);if(currentInventory&&d.inventario_id===currentInventory.id){const a=aportesInventario(d.inventario_id,d.producto_id);return a.length?totalFisicoProducto(d.inventario_id,d.producto_id):null}return d.conteo_fisico===null||d.conteo_fisico===undefined?null:Number(d.conteo_fisico)}
+function conteoFueCapturado(d){if(!d)return false;if(currentInventory&&d.inventario_id===currentInventory.id)return aportesInventario(d.inventario_id,d.producto_id).length>0;return d.conteo_fisico!==null&&d.conteo_fisico!==undefined&&!!d.contado_en}
 function ultimoInventarioAceptado(antesDe=null){return inventarios.filter(i=>i.estado==='ACEPTADO'&&(!antesDe||new Date(i.fecha_cierre||i.fecha_inicio)<new Date(antesDe))).sort((a,b)=>new Date(b.fecha_cierre||b.fecha_inicio)-new Date(a.fecha_cierre||a.fecha_inicio))[0]||null}
 function movimientoEsVenta(m){return ['VENTA','REVERSO_VENTA'].includes(m.tipo)}
 function calcularMovimientosProducto(pid,desde,hasta){const ms=inventarioMovimientos.filter(m=>m.producto_id===pid&&new Date(m.fecha)>new Date(desde)&&new Date(m.fecha)<=new Date(hasta));let entradas=0,vendido=0,otrasSalidas=0;for(const m of ms){const q=Number(m.cantidad||0);if(m.tipo==='VENTA'&&q<0)vendido+=Math.abs(q);else if((m.tipo==='REVERSO_VENTA'||m.tipo==='ANULACION_PEDIDO')&&q>0)vendido-=q;else if(q>0)entradas+=q;else if(q<0)otrasSalidas+=Math.abs(q)}return {entradas:Math.max(0,entradas),vendido:Math.max(0,vendido),otrasSalidas:Math.max(0,otrasSalidas)}}
 async function abrirInventarios(){cerrarMenu();await loadAll({permitirSemilla:false});renderInventarios();$('inventoriesDlg').showModal()}
-function renderInventarios(){const list=[...inventarios].sort((a,b)=>new Date(b.fecha_inicio)-new Date(a.fecha_inicio));$('inventoryHistoryRows').innerHTML=list.length?list.map(i=>{const ds=detallesInventario(i.id),diff=ds.filter(d=>Number(d.diferencia||0)!==0).length,anulado=i.estado==='ANULADO',cerrado=i.estado==='ACEPTADO'||anulado,estado=i.estado==='ACEPTADO'?'<span class="tag green">ACEPTADO</span>':anulado?'<span class="tag red">ANULADO</span>':i.estado==='PENDIENTE_AUTORIZACION'?'<span class="tag amber">PENDIENTE</span>':'<span class="tag amber">EN CONTEO</span>';return `<tr><td><b>${esc(i.numero)}</b></td><td>${dateText(i.fecha_inicio)}</td><td>${i.fecha_cierre?dateText(i.fecha_cierre):'—'}</td><td>${esc(i.creado_por_nombre||'')}</td><td>${estado}</td><td>${diff}</td><td>${esc(i.autorizado_por_nombre||'—')}</td><td><button class="rowbtn" onclick="${cerrado?`verInventario('${i.id}')`:`abrirInventario('${i.id}')`}">${cerrado?'👁️':'🧮'}</button>${cerrado?`<button class="rowbtn" onclick="previsualizarInventario('${i.id}')">📄</button>`:''}</td></tr>`}).join(''):'<tr><td colspan="8" class="empty">Todavía no existen tomas de inventario.</td></tr>'}
+function renderInventarios(){const list=[...inventarios].sort((a,b)=>new Date(b.fecha_inicio)-new Date(a.fecha_inicio));$('inventoryHistoryRows').innerHTML=list.length?list.map(i=>{const ds=detallesInventario(i.id),diff=i.estado==='ACEPTADO'?ds.filter(d=>Number(d.diferencia||0)!==0).length:ds.filter(d=>aportesInventario(i.id,d.producto_id).length&&totalFisicoProducto(i.id,d.producto_id)!==Number(d.esperado||0)).length,anulado=i.estado==='ANULADO',cerrado=i.estado==='ACEPTADO'||anulado,estado=i.estado==='ACEPTADO'?'<span class="tag green">ACEPTADO</span>':anulado?'<span class="tag red">ANULADO</span>':i.estado==='PENDIENTE_AUTORIZACION'?'<span class="tag amber">PENDIENTE</span>':'<span class="tag amber">EN CONTEO</span>';return `<tr><td><b>${esc(i.numero)}</b></td><td>${dateText(i.fecha_inicio)}</td><td>${i.fecha_cierre?dateText(i.fecha_cierre):'—'}</td><td>${esc(i.creado_por_nombre||'')}</td><td>${estado}</td><td>${diff}</td><td>${esc(i.autorizado_por_nombre||'—')}</td><td><button class="rowbtn" onclick="${cerrado?`verInventario('${i.id}')`:`abrirInventario('${i.id}')`}">${cerrado?'👁️':'🧮'}</button>${cerrado?`<button class="rowbtn" onclick="previsualizarInventario('${i.id}')">📄</button>`:''}</td></tr>`}).join(''):'<tr><td colspan="8" class="empty">Todavía no existen tomas de inventario.</td></tr>'}
 async function iniciarTomaInventario(){
   if(inventoryCreateBusy){toast('La toma de inventario ya se está creando. Espere un momento…');return}
   if(activeRoute){alert('No se puede iniciar una toma de inventario mientras exista una ruta abierta. Cierre la ruta primero.');return}
-  inventoryCreateBusy=true;
-  const btn=document.querySelector('[onclick="iniciarTomaInventario()"]');
-  const btnTexto=btn?.textContent||'';
-  if(btn){btn.disabled=true;btn.textContent='Creando…'}
+  if(!navigator.onLine){alert('Para iniciar una nueva toma compartida se necesita Internet. Una vez iniciada, cada dispositivo puede seguir contando y PowerSync sincronizará sus aportes.');return}
+  if(!productos.length){alert('No hay productos para inventariar.');return}
+  inventoryCreateBusy=true;const btn=document.querySelector('[onclick="iniciarTomaInventario()"]'),bt=btn?.textContent||'';if(btn){btn.disabled=true;btn.textContent='Creando…'}
   try{
-    // Vuelve a leer la base local PowerSync justo antes de crear.
-    try{inventarios=await getAllStore('inventarios')}catch(e){console.warn('No se pudo refrescar inventarios antes de crear',e)}
-    const abierto=inventarios.find(x=>x.estado==='EN_CONTEO'||x.estado==='PENDIENTE_AUTORIZACION');
-    if(abierto){
-      alert('Ya existe una toma de inventario abierta: '+abierto.numero);
-      await abrirInventario(abierto.id);
-      return;
-    }
-    if(!productos.length){alert('No hay productos para inventariar.');return}
-
-    const now=new Date().toISOString(),
-          prev=ultimoInventarioAceptado(now),
-          prevDetails=prev?detallesInventario(prev.id):[],
-          prevMap=new Map(prevDetails.map(d=>[d.producto_id,d]));
-
-    // El correlativo nunca se reutiliza si ya existe localmente.
-    let n=Math.max(Number(settings.inventarioNumero||1),1);
-    let numero='INV'+String(n).padStart(6,'0');
-    let guard=0;
-    while(inventarios.some(x=>x.numero===numero)&&guard<10000){
-      n++;
-      numero='INV'+String(n).padStart(6,'0');
-      guard++;
-    }
-    if(guard>=10000)throw new Error('No fue posible obtener un correlativo libre para la toma de inventario.');
-
-    const inv={
-      id:idgen('inv'),
-      numero,
-      fecha_inicio:now,
-      fecha_cierre:null,
-      estado:'EN_CONTEO',
-      creado_por_id:currentProfile?.id||authSession?.user?.id||null,
-      creado_por_nombre:perfilNombre(currentProfile,authSession),
-      autorizado_por_id:null,
-      autorizado_por_nombre:null,
-      autorizado_en:null,
-      observacion:'',
-      total_productos:productos.length,
-      total_diferencias:0,
-      actualizado:now
-    };
-
-    // Registrar primero la cabecera. El bloqueo evita que este dispositivo cree otra en paralelo.
-    await putStore('inventarios',inv);
-    inventarios.push(inv);
-
-    for(const p of productos){
-      const prevD=prevMap.get(p.id),
-            inicial=prevD?Number(prevD.conteo_fisico||0):Number(p.cantidad||0),
-            desde=prev?.fecha_cierre||now,
-            m=prev?calcularMovimientosProducto(p.id,desde,now):{entradas:0,vendido:0,otrasSalidas:0},
-            esperado=inicial+m.entradas-m.vendido-m.otrasSalidas;
-      await putStore('inventario_detalle',{
-        id:`${inv.id}-${p.id}`,
-        inventario_id:inv.id,
-        producto_id:p.id,
-        codigo:p.codigo||'',
-        descripcion:p.descripcion||'',
-        inventario_inicial:inicial,
-        entradas:m.entradas,
-        vendido:m.vendido,
-        otras_salidas:m.otrasSalidas,
-        esperado,
-        conteo_fisico:null,
-        diferencia:null,
-        contado_por_id:null,
-        contado_por_nombre:null,
-        contado_device_id:null,
-        contado_en:null,
-        actualizado:now
-      });
-    }
-
-    // Guarda el siguiente correlativo, no simplemente +1 sobre un valor atrasado.
-    settings.inventarioNumero=n+1;
-    await putStore('settings',settings);
-
-    await loadAll({permitirSemilla:false});
-    currentInventory=inventarios.find(x=>x.id===inv.id);
-    cerrarDlg('inventoriesDlg');
-    await abrirInventario(inv.id);
-  }catch(e){
-    console.error('Error al iniciar toma de inventario',e);
-    alert('No se pudo iniciar la toma de inventario.\n\n'+(e?.message||e));
-  }finally{
-    inventoryCreateBusy=false;
-    if(btn){btn.disabled=false;btn.textContent=btnTexto}
-  }
+    const c=await esperarCloud();await c.syncNow({timeoutMs:15000});
+    const {data,error}=await sb.rpc('lc_iniciar_inventario_colaborativo',{p_creado_por_id:currentProfile?.id||authSession?.user?.id||null,p_creado_por_nombre:perfilNombre(currentProfile,authSession)});if(error)throw error;
+    await c.syncNow({timeoutMs:15000});await loadAll({permitirSemilla:false});
+    const id=data?.id||data?.inventario_id,inv=inventarios.find(x=>x.id===id)||inventarioEnCurso();if(!inv)throw new Error('La toma fue creada en servidor, pero todavía no llegó al dispositivo. Presione Actualizar e inténtelo de nuevo.');
+    cerrarDlg('inventoriesDlg');await abrirInventario(inv.id);if(data?.existente)toast('Ya existía una toma activa. Se abrió la misma toma compartida.');else toast('Toma compartida iniciada correctamente.');
+  }catch(e){console.error(e);alert('No se pudo iniciar la toma de inventario.\n\n'+(e?.message||e)+'\n\nVerifique que ejecutó SQL_MIGRACION_v10_10_0.sql y desplegó los Sync Streams.')}
+  finally{inventoryCreateBusy=false;if(btn){btn.disabled=false;btn.textContent=bt}}
 }
 function participanteInventarioId(invId){const uid=currentProfile?.id||authSession?.user?.id||'usuario';return `${invId}|${uid}|${getDeviceId()}`}
 function participantesActivosInventario(invId){const limite=Date.now()-120000;return inventarioParticipantes.filter(p=>p.inventario_id===invId&&p.activo!==false&&Number(p.activo)!==0&&new Date(p.ultimo_latido||0).getTime()>=limite).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'))}
 function nombresParticipantesInventario(invId){return [...new Set(inventarioParticipantes.filter(p=>p.inventario_id===invId&&p.nombre).map(p=>p.nombre))].sort((a,b)=>a.localeCompare(b,'es'))}
-function renderParticipantesInventario(){const el=$('inventoryParticipants');if(!el||!currentInventory)return;const activos=participantesActivosInventario(currentInventory.id);el.innerHTML=activos.length?`<b>👥 Contando ahora (${activos.length}):</b> ${activos.map(p=>`<span class="tag green" title="${esc(p.device_id||'')}">${esc(p.nombre||'Usuario')}</span>`).join(' ')}`:'<b>👥 Contando ahora:</b> esperando participantes…';}
-async function marcarParticipanteInventario(activo=true){if(!currentInventory||currentInventory.estado==='ACEPTADO')return;const now=new Date().toISOString(),id=participanteInventarioId(currentInventory.id),p={id,inventario_id:currentInventory.id,usuario_id:currentProfile?.id||authSession?.user?.id||null,nombre:perfilNombre(currentProfile,authSession),device_id:getDeviceId(),ultimo_latido:now,activo:activo?1:0,actualizado:now};await putStore('inventario_participantes',p);const i=inventarioParticipantes.findIndex(x=>x.id===id);if(i>=0)inventarioParticipantes[i]=p;else inventarioParticipantes.push(p);renderParticipantesInventario()}
+function renderParticipantesInventario(){const el=$('inventoryParticipants');if(!el||!currentInventory)return;const activos=participantesActivosInventario(currentInventory.id);el.innerHTML=activos.length?`<b>👥 Contando ahora (${activos.length}):</b> ${activos.map(p=>`<span class="tag green" title="${esc(p.device_id||'')}">${esc(p.nombre||'Usuario')}</span>`).join(' ')}`:'<b>👥 Contando ahora:</b> esperando participantes…'}
+async function marcarParticipanteInventario(activo=true){if(!currentInventory||['ACEPTADO','ANULADO'].includes(currentInventory.estado))return;const now=new Date().toISOString(),id=participanteInventarioId(currentInventory.id),p={id,inventario_id:currentInventory.id,usuario_id:currentProfile?.id||authSession?.user?.id||null,nombre:perfilNombre(currentProfile,authSession),device_id:getDeviceId(),ultimo_latido:now,activo:activo?1:0,actualizado:now};await putStore('inventario_participantes',p);const i=inventarioParticipantes.findIndex(x=>x.id===id);if(i>=0)inventarioParticipantes[i]=p;else inventarioParticipantes.push(p);renderParticipantesInventario()}
 function iniciarHeartbeatInventario(){clearInterval(inventoryHeartbeatTimer);marcarParticipanteInventario(true).catch(()=>{});inventoryHeartbeatTimer=setInterval(()=>{if(currentInventory&&dialogoAbierto('inventoryCountDlg'))marcarParticipanteInventario(true).catch(()=>{})},45000)}
 async function salirParticipacionInventario(){clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;try{await marcarParticipanteInventario(false)}catch{}}
 async function entrarInventarioActivoAutomatico(){const inv=inventarioEnCurso();if(!inv||inv.estado==='ACEPTADO'||inventoryFinalizing)return;if(inventoryAutoDismissedId===inv.id)return;if(dialogoAbierto('inventoryCountDlg')&&currentInventory?.id===inv.id)return;lastAutoInventoryId=inv.id;await abrirInventario(inv.id,true)}
-async function abrirInventario(id,automatico=false){currentInventory=inventarios.find(x=>x.id===id);if(!currentInventory)return;if(currentInventory.estado==='ACEPTADO'||currentInventory.estado==='ANULADO'){verInventario(id);return}if(!automatico)inventoryAutoDismissedId=null;$('inventorySearch').value='';$('inventoryCountTitle').textContent='Toma de inventario '+currentInventory.numero;renderInventarioConteo();if(!$('inventoryCountDlg').open)$('inventoryCountDlg').showModal();iniciarHeartbeatInventario();if(automatico)toast('Se detectó una toma de inventario activa. Se abrió automáticamente para conteo compartido.')}
-function renderInventarioConteo(){if(!currentInventory)return;const q=norm($('inventorySearch')?.value||''),all=detallesInventario(currentInventory.id),ds=all.filter(d=>!q||norm([d.codigo,d.descripcion].join(' ')).includes(q)),capturados=all.filter(conteoFueCapturado).length,diffs=all.filter(d=>{const v=valorConteoSeguro(d);return v!==null&&(v-Number(d.esperado||0))!==0}).length;$('inventoryCountSummary').innerHTML=`<div><small>Inventario</small><b>${esc(currentInventory.numero)}</b></div><div><small>Capturados</small><b>${capturados} / ${all.length}</b></div><div><small>Diferencias</small><b>${diffs}</b></div>`;renderParticipantesInventario();$('inventoryCountRows').innerHTML=ds.map(d=>{const v=valorConteoSeguro(d),dif=v===null?null:v-Number(d.esperado||0),quien=d.contado_por_nombre?`${esc(d.contado_por_nombre)}<br><small>${d.contado_en?dateText(d.contado_en):''}</small>`:'—';return `<tr><td class="code">${esc(d.codigo||'S/C')}</td><td><b>${esc(d.descripcion)}</b></td><td>${d.inventario_inicial}</td><td>${d.entradas}</td><td>${d.vendido}</td><td>${d.otras_salidas}</td><td><b>${d.esperado}</b></td><td><input class="inv-count-input" data-detail-id="${esc(d.id)}" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" value="${v===null?'':v}" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onchange="actualizarConteoFisico('${d.id}',this.value)" style="width:105px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-weight:800"></td><td><b style="color:${dif===0?'#047857':'#b91c1c'}">${dif===null?'—':dif}</b></td><td>${quien}</td></tr>`}).join('')}
-async function actualizarConteoFisico(id,v){const d=inventarioDetalle.find(x=>x.id===id);if(!d)return;const limpio=String(v??'').replace(/[^0-9]/g,''),val=limpio===''?null:Math.max(0,parseInt(limpio,10)||0),now=new Date().toISOString();if(val===null){const draft=leerBorradorInventario(currentInventory?.id||'');delete draft[id];guardarBorradorInventario(currentInventory?.id||'',draft);d.conteo_fisico=null;d.diferencia=null;d.contado_por_id=null;d.contado_por_nombre=null;d.contado_device_id=null;d.contado_en=null}else{guardarDraftDetalle(d,val);d.conteo_fisico=val;d.diferencia=val-Number(d.esperado||0);d.contado_por_id=currentProfile?.id||authSession?.user?.id||null;d.contado_por_nombre=perfilNombre(currentProfile,authSession);d.contado_device_id=getDeviceId();d.contado_en=now}d.actualizado=now;await putStore('inventario_detalle',d);await marcarParticipanteInventario(true);if(!inventorySaveBusy)renderInventarioConteo()}
-async function guardarInputsConteoVisibles(){if(!currentInventory)return;inventorySaveBusy=true;try{const inputs=[...document.querySelectorAll('#inventoryCountRows .inv-count-input')];for(const input of inputs){const id=input.dataset.detailId,d=inventarioDetalle.find(x=>x.id===id);if(!d)continue;const limpio=String(input.value??'').replace(/[^0-9]/g,''),val=limpio===''?null:Math.max(0,parseInt(limpio,10)||0),actual=valorConteoSeguro(d);if(val!==actual)await actualizarConteoFisico(id,input.value)}}finally{inventorySaveBusy=false}}
-async function guardarInventarioEnCurso(){if(!currentInventory||inventorySaveBusy)return;await guardarInputsConteoVisibles();await marcarParticipanteInventario(true);snapshotStore('inventario_detalle',inventarioDetalle);toast(`Avance guardado: ${detallesInventario(currentInventory.id).filter(conteoFueCapturado).length} producto(s) capturado(s).`)}
-async function cerrarTomaInventario(){if(currentInventory)await guardarInputsConteoVisibles();await salirParticipacionInventario();inventoryAutoDismissedId=currentInventory?.id||inventoryAutoDismissedId;cerrarDlg('inventoryCountDlg');currentInventory=null;toast('Toma cerrada en este dispositivo. Puede continuarla luego desde Historial de inventarios.')}
-async function cancelarTomaInventario(){if(!currentInventory)return;const inv=currentInventory,auth=await solicitarAutorizacionAdmin('Autorizar cancelación de toma de inventario');if(!auth)return;if(!confirm(`¿Cancelar ${inv.numero}?\n\nNO se modificarán las existencias. El conteo parcial quedará como historial cancelado.`))return;await guardarInputsConteoVisibles();const now=new Date().toISOString();inv.estado='ANULADO';inv.fecha_cierre=now;inv.autorizado_por_id=auth.id;inv.autorizado_por_nombre=auth.nombre;inv.autorizado_en=now;inv.observacion=(inv.observacion?inv.observacion+' · ':'')+'Toma cancelada sin aplicar existencias';inv.actualizado=now;await putStore('inventarios',inv);borrarBorradorInventario(inv.id);inventoryAutoDismissedId=inv.id;currentInventory=null;clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;cerrarDlg('inventoryCountDlg');await loadAll({permitirSemilla:false});renderProductos();toast('Toma cancelada. Las existencias no fueron modificadas.')}
-async function solicitarCierreInventario(){if(!currentInventory)return;if(activeRoute){alert('No puede cerrar el inventario mientras exista una ruta abierta.');return}await guardarInputsConteoVisibles();const ds=detallesInventario(currentInventory.id);if(ds.some(d=>!conteoFueCapturado(d))){alert('Faltan productos por contar. Complete todos los conteos físicos antes de aceptar el inventario.');return}const auth=await solicitarAutorizacionAdmin('Autorizar cuadre final de inventario');if(!auth)return;if(!confirm('¿Aceptar este inventario como inventario final? El conteo físico pasará a ser la existencia oficial y será la base del próximo inventario.'))return;await aceptarInventario(currentInventory.id,auth)}
-async function aceptarInventario(id,auth){if(inventoryFinalizing)return;inventoryFinalizing=true;try{await guardarInputsConteoVisibles();const inv=inventarios.find(x=>x.id===id),ds=detallesInventario(id),now=new Date().toISOString();if(!inv)throw new Error('No se encontró la toma de inventario.');const faltan=ds.filter(d=>!conteoFueCapturado(d));if(faltan.length)throw new Error(`Faltan ${faltan.length} producto(s) por contar. No se aplicó ningún cambio.`);for(const d of ds){const p=productos.find(x=>x.id===d.producto_id);if(!p)continue;const fis=valorConteoSeguro(d);if(fis===null)throw new Error(`El producto ${d.descripcion||d.codigo} no tiene conteo físico confirmado.`);const esperado=Number(d.esperado||0),ajuste=fis-esperado;p.cantidad=fis;if(Number(p.cantidadMaleta||0)>fis)p.cantidadMaleta=fis;p.actualizado=now;await putStore('productos',p);if(ajuste)await registrarMovimientoInventario({producto:p,tipo:'AJUSTE_INVENTARIO',cantidad:ajuste,motivo:`Cuadre ${inv.numero}: físico ${fis}, esperado ${esperado}`,referenciaId:inv.id,autorizacion:auth})}inv.estado='ACEPTADO';inv.fecha_cierre=now;inv.autorizado_por_id=auth.id;inv.autorizado_por_nombre=auth.nombre;inv.autorizado_en=now;inv.total_diferencias=ds.filter(d=>{const v=valorConteoSeguro(d);return v!==null&&(v-Number(d.esperado||0))!==0}).length;inv.actualizado=now;await putStore('inventarios',inv);for(const part of inventarioParticipantes.filter(x=>x.inventario_id===id&&x.activo!==false&&Number(x.activo)!==0)){part.activo=0;part.actualizado=now;await putStore('inventario_participantes',part)}borrarBorradorInventario(id);inventoryAutoDismissedId=id;currentInventory=null;clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;cerrarDlg('inventoryCountDlg');await loadAll({permitirSemilla:false});llenarFiltros();renderProductos();actualizarRutaBar();toast('Inventario aceptado por '+auth.nombre);verInventario(id)}catch(e){console.error(e);alert('No se pudo aceptar el inventario.\n\n'+(e?.message||e)+'\n\nNo se cerró la toma para evitar perder el conteo.')}finally{inventoryFinalizing=false}}
+async function abrirInventario(id,automatico=false){currentInventory=inventarios.find(x=>x.id===id);if(!currentInventory)return;if(currentInventory.estado==='ACEPTADO'||currentInventory.estado==='ANULADO'){verInventario(id);return}if(!automatico)inventoryAutoDismissedId=null;$('inventorySearch').value='';$('inventoryCountTitle').textContent='Toma colaborativa '+currentInventory.numero;renderInventarioConteo();if(!$('inventoryCountDlg').open)$('inventoryCountDlg').showModal();iniciarHeartbeatInventario();if(automatico)toast('Se detectó una toma activa. Se abrió para continuar el conteo compartido.')}
+function renderInventarioConteo(){
+  if(!currentInventory)return;const all=detallesInventario(currentInventory.id),q=$('inventorySearch')?.value||'',ids=q?new Set(ordenarProductosPorBusqueda(productos,q).map(p=>p.id)):null,ds=ids?all.filter(d=>ids.has(d.producto_id)):all,capturados=all.filter(d=>aportesInventario(currentInventory.id,d.producto_id).length>0).length,diffs=all.filter(d=>aportesInventario(currentInventory.id,d.producto_id).length>0&&totalFisicoProducto(currentInventory.id,d.producto_id)!==Number(d.esperado||0)).length;
+  const pendientes=Math.max(0,all.length-capturados);$('inventoryCountSummary').innerHTML=`<div><small>Inventario</small><b>${esc(currentInventory.numero)}</b></div><div><small>Productos con conteo</small><b>${capturados} / ${all.length}</b></div><div><small>Pendientes</small><b>${pendientes}</b></div><div><small>Aportes registrados</small><b>${aportesInventario(currentInventory.id).length}</b></div><div><small>Diferencias actuales</small><b>${diffs}</b></div>`;renderParticipantesInventario();
+  $('inventoryCountRows').innerHTML=ds.map(d=>{const aps=aportesInventario(currentInventory.id,d.producto_id),capt=aps.length>0,total=capt?totalFisicoProducto(currentInventory.id,d.producto_id):null,mi=miTotalFisicoProducto(currentInventory.id,d.producto_id),dif=capt?total-Number(d.esperado||0):null,last=ultimoAporteProducto(currentInventory.id,d.producto_id);return `<tr><td class="code">${esc(d.codigo||'S/C')}</td><td><b>${esc(d.descripcion)}</b></td><td><b>${Number(d.esperado||0)}</b></td><td><div style="display:flex;gap:6px;align-items:center"><input id="invadd_${esc(d.id)}" class="inv-count-input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" placeholder="0" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();sumarAporteInventario('${d.producto_id}','${d.id}')}" style="width:80px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-weight:800"><button class="btn green" type="button" onclick="sumarAporteInventario('${d.producto_id}','${d.id}')">＋ Sumar</button></div></td><td><b>${mi}</b></td><td><b style="font-size:18px">${total===null?'—':total}</b></td><td><b style="color:${dif===0?'#047857':'#b91c1c'}">${dif===null?'—':dif}</b></td><td>${last?`${esc(last.contado_por_nombre||'Usuario')}<br><small>+${Number(last.cantidad||0)} · ${last.contado_en?dateText(last.contado_en):''}</small>`:'—'}</td><td>${mi>0||aps.some(a=>a.device_id===getDeviceId())?`<button class="rowbtn" title="Deshacer mi último aporte" onclick="deshacerUltimoAporte('${d.producto_id}')">↩️</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">No se encontraron productos.</td></tr>'
+}
+async function sumarAporteInventario(productoId,detailId){if(!currentInventory||currentInventory.estado!=='EN_CONTEO'){alert('Esta toma ya no acepta nuevos conteos. Actualice la información.');return}const input=$('invadd_'+detailId),raw=String(input?.value??'').replace(/[^0-9]/g,'');if(raw===''){alert('Ingrese la cantidad que acaba de contar. Puede ser 0 si confirmó físicamente que no hay unidades.');return}const cantidad=Math.max(0,parseInt(raw,10)||0),now=new Date().toISOString(),a={id:idgen('ica'),inventario_id:currentInventory.id,producto_id:productoId,cantidad,contado_por_id:currentProfile?.id||authSession?.user?.id||null,contado_por_nombre:perfilNombre(currentProfile,authSession),device_id:getDeviceId(),contado_en:now,actualizado:now,eliminado_en:null};try{await putStore('inventario_aportes',a);inventarioAportes.push(a);await marcarParticipanteInventario(true);if(input)input.value='';snapshotStore('inventario_aportes',inventarioAportes);renderInventarioConteo();toast(`Aporte +${cantidad} guardado. Total consolidado: ${totalFisicoProducto(currentInventory.id,productoId)}.`)}catch(e){console.error(e);alert('No se pudo guardar el aporte.\n\n'+(e?.message||e))}}
+async function deshacerUltimoAporte(productoId){if(!currentInventory||currentInventory.estado!=='EN_CONTEO')return;const dev=getDeviceId(),a=aportesInventario(currentInventory.id,productoId).filter(x=>x.device_id===dev).sort((x,y)=>new Date(y.contado_en||0)-new Date(x.contado_en||0))[0];if(!a){toast('Este dispositivo no tiene aportes para deshacer en este producto.');return}if(!confirm(`¿Deshacer su último aporte de ${Number(a.cantidad||0)} unidad(es)?\n\nSolo se quitará este aporte; los conteos de otros dispositivos permanecerán.`))return;a.eliminado_en=new Date().toISOString();a.actualizado=a.eliminado_en;await putStore('inventario_aportes',a);snapshotStore('inventario_aportes',inventarioAportes);renderInventarioConteo();toast('Último aporte deshecho.')}
+async function guardarInputsConteoVisibles(){return}
+async function guardarInventarioEnCurso(){if(!currentInventory||inventorySaveBusy)return;inventorySaveBusy=true;try{await marcarParticipanteInventario(true);if(navigator.onLine){const c=await esperarCloud();await c.syncNow({timeoutMs:12000});await loadAll({permitirSemilla:false});currentInventory=inventarios.find(x=>x.id===currentInventory?.id)||currentInventory;renderInventarioConteo();toast('Conteos sincronizados y total consolidado actualizado.')}else{snapshotStore('inventario_aportes',inventarioAportes);toast('Aportes guardados localmente. Se sincronizarán cuando vuelva Internet.')}}catch(e){console.warn(e);toast('Los aportes siguen guardados; PowerSync continuará sincronizando.')}finally{inventorySaveBusy=false}}
+async function cerrarTomaInventario(){await salirParticipacionInventario();inventoryAutoDismissedId=currentInventory?.id||inventoryAutoDismissedId;cerrarDlg('inventoryCountDlg');currentInventory=null;toast('Toma cerrada en este dispositivo. Los aportes ya guardados permanecen en el inventario compartido.')}
+async function cancelarTomaInventario(){if(!currentInventory)return;const inv=currentInventory,auth=await solicitarAutorizacionAdmin('Autorizar cancelación de toma de inventario');if(!auth)return;if(!confirm(`¿Cancelar ${inv.numero}?\n\nNO se modificarán las existencias. Los aportes quedarán como historial de la toma anulada.`))return;const now=new Date().toISOString();inv.estado='ANULADO';inv.fecha_cierre=now;inv.autorizado_por_id=auth.id;inv.autorizado_por_nombre=auth.nombre;inv.autorizado_en=now;inv.observacion=(inv.observacion?inv.observacion+' · ':'')+'Toma cancelada sin aplicar existencias';inv.actualizado=now;await putStore('inventarios',inv);inventoryAutoDismissedId=inv.id;currentInventory=null;clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;cerrarDlg('inventoryCountDlg');await loadAll({permitirSemilla:false});renderProductos();toast('Toma cancelada. Las existencias no fueron modificadas.')}
+async function marcarPendientesCeroInventario(){
+  if(!currentInventory)return;
+  if(currentInventory.estado!=='EN_CONTEO'){alert('Esta toma ya no acepta cambios. Actualice la información.');return}
+  if(activeRoute){alert('No se puede completar pendientes en cero mientras exista una ruta abierta.');return}
+  if(!navigator.onLine){alert('Para marcar muchos productos en cero se necesita Internet. Así se comprueban primero los conteos de los demás dispositivos y se evita sobrescribir trabajo pendiente de sincronizar.');return}
+  try{
+    const c=await esperarCloud();
+    await c.syncNow({timeoutMs:20000});
+    await loadAll({permitirSemilla:false});
+    currentInventory=inventarios.find(x=>x.id===currentInventory?.id)||currentInventory;
+    const st=await c.syncStatus();
+    if(st.pending>0){alert(`Este dispositivo todavía tiene ${st.pending} cambio(s) pendiente(s). Espere a que Estado nube muestre 0 antes de continuar.`);return}
+    const ds=detallesInventario(currentInventory.id),faltan=ds.filter(d=>aportesInventario(currentInventory.id,d.producto_id).length===0);
+    if(!faltan.length){toast('No hay productos pendientes. Todos tienen un conteo físico registrado.');return}
+    const activos=participantesActivosInventario(currentInventory.id).filter(p=>p.device_id!==getDeviceId());
+    if(activos.length){
+      const ok=confirm(`Hay ${activos.length} dispositivo(s) que aparecen contando ahora:\n\n${activos.map(x=>x.nombre||'Usuario').join(', ')}\n\nEsta acción debe usarse solamente cuando TODOS hayan terminado de contar y sincronizar. ¿Confirma que ya terminaron?`);
+      if(!ok)return;
+    }
+    const auth=await solicitarAutorizacionAdmin('Autorizar productos pendientes en cero');
+    if(!auth)return;
+    if(!confirm(`⚠️ CONFIRMACIÓN IMPORTANTE\n\nHay ${faltan.length} producto(s) sin ningún conteo físico.\n\nAl continuar, LCexpress registrará 0 como conteo físico para TODOS esos productos.\n\nUse esta opción únicamente si ya terminaron de sacar y contar TODO el inventario.\n\n¿Marcar los ${faltan.length} pendientes en cero?`))return;
+    const now=new Date().toISOString();
+    for(const d of faltan){
+      const a={id:idgen('ica'),inventario_id:currentInventory.id,producto_id:d.producto_id,cantidad:0,contado_por_id:auth.id,contado_por_nombre:(auth.nombre||'ADMIN')+' · CERO EN BLOQUE',device_id:getDeviceId(),contado_en:now,actualizado:now,eliminado_en:null};
+      await putStore('inventario_aportes',a);
+      inventarioAportes.push(a);
+    }
+    snapshotStore('inventario_aportes',inventarioAportes);
+    renderInventarioConteo();
+    toast(`${faltan.length} producto(s) pendientes marcados en 0. Sincronizando…`);
+    await c.syncNow({timeoutMs:30000});
+    await loadAll({permitirSemilla:false});
+    currentInventory=inventarios.find(x=>x.id===currentInventory?.id)||currentInventory;
+    renderInventarioConteo();
+    const st2=await c.syncStatus();
+    if(st2.pending>0)alert(`Los ceros fueron guardados localmente, pero todavía quedan ${st2.pending} cambio(s) pendientes de subir. NO acepte el inventario hasta que Estado nube muestre 0.`);
+    else toast('Pendientes completados en cero y sincronizados. Revise el cuadre antes de aceptar el inventario.');
+  }catch(e){
+    console.error(e);
+    alert('No se pudieron marcar los pendientes en cero.\n\n'+(e?.message||e)+'\n\nNo se aceptó ni se modificó el inventario oficial.');
+  }
+}
+async function solicitarCierreInventario(){if(!currentInventory)return;if(activeRoute){alert('No puede cerrar el inventario mientras exista una ruta abierta.');return}if(!navigator.onLine){alert('Para aceptar el inventario final se necesita Internet. Así LCexpress consolida en el servidor los aportes de todos los dispositivos y evita cerrar con conteos que aún no han sincronizado.');return}try{const c=await esperarCloud();await c.syncNow({timeoutMs:20000});await loadAll({permitirSemilla:false});currentInventory=inventarios.find(x=>x.id===currentInventory.id)||currentInventory;const st=await c.syncStatus();if(st.pending>0){alert(`Este dispositivo todavía tiene ${st.pending} cambio(s) pendiente(s). Espere a que Estado nube muestre 0 antes de aceptar.`);return}const ds=detallesInventario(currentInventory.id),faltan=ds.filter(d=>aportesInventario(currentInventory.id,d.producto_id).length===0);if(faltan.length){alert(`Faltan ${faltan.length} producto(s) por contar.\n\nSi ya terminaron de contar TODO físicamente, use el botón “Pendientes → 0” para marcar esos productos en cero de una sola vez. Luego revise el cuadre antes de aceptar.`);return}const activos=participantesActivosInventario(currentInventory.id).filter(p=>p.device_id!==getDeviceId());if(activos.length&&!confirm(`Hay ${activos.length} dispositivo(s) que aparecen contando ahora:\n\n${activos.map(x=>x.nombre||'Usuario').join(', ')}\n\nAntes de continuar confirme que esos dispositivos ya terminaron y están sincronizados. ¿Continuar?`))return;const auth=await solicitarAutorizacionAdmin('Autorizar cuadre final de inventario');if(!auth)return;if(!confirm('¿Aceptar este inventario como inventario final?\n\nEl servidor sumará TODOS los aportes de TODOS los dispositivos por producto y ese total pasará a ser la existencia oficial.'))return;await aceptarInventario(currentInventory.id,auth)}catch(e){console.error(e);alert('No se pudo preparar el cierre del inventario.\n\n'+(e?.message||e))}}
+async function aceptarInventario(id,auth){if(inventoryFinalizing)return;inventoryFinalizing=true;try{const {data,error}=await sb.rpc('lc_aceptar_inventario_colaborativo',{p_inventario_id:id,p_autorizado_por_id:auth.id,p_autorizado_por_nombre:auth.nombre});if(error)throw error;const c=await esperarCloud();await c.syncNow({timeoutMs:20000});inventoryAutoDismissedId=id;currentInventory=null;clearInterval(inventoryHeartbeatTimer);inventoryHeartbeatTimer=null;cerrarDlg('inventoryCountDlg');await loadAll({permitirSemilla:false});llenarFiltros();renderProductos();actualizarRutaBar();toast(`Inventario aceptado. ${data?.productos||''} productos consolidados.`);verInventario(id)}catch(e){console.error(e);alert('No se pudo aceptar el inventario.\n\n'+(e?.message||e)+'\n\nNo se cerró la toma para evitar perder el conteo.')}finally{inventoryFinalizing=false}}
 function verInventario(id){const inv=inventarios.find(x=>x.id===id);if(!inv)return;const ds=detallesInventario(id);$('inventoryViewBody').innerHTML=`<div class="customer-head"><div><small>Inventario</small><b>${esc(inv.numero)}</b></div><div><small>Inicio</small><b>${dateText(inv.fecha_inicio)}</b></div><div><small>Cierre</small><b>${inv.fecha_cierre?dateText(inv.fecha_cierre):'—'}</b></div><div><small>Iniciado por</small><b>${esc(inv.creado_por_nombre||'')}</b></div><div><small>Participantes</small><b>${esc(nombresParticipantesInventario(inv.id).join(', ')||inv.creado_por_nombre||'')}</b></div><div><small>Autorizado por</small><b>${esc(inv.autorizado_por_nombre||'—')}</b></div><div><small>Diferencias</small><b>${ds.filter(d=>Number(d.diferencia||0)!==0).length}</b></div></div><div class="scroll"><table style="min-width:1100px"><thead><tr><th>Código</th><th>Producto</th><th>Inicial</th><th>Entradas</th><th>Vendido</th><th>Otras salidas</th><th>Esperado</th><th>Físico</th><th>Diferencia</th></tr></thead><tbody>${ds.map(d=>`<tr><td>${esc(d.codigo||'S/C')}</td><td>${esc(d.descripcion)}</td><td>${d.inventario_inicial}</td><td>${d.entradas}</td><td>${d.vendido}</td><td>${d.otras_salidas}</td><td>${d.esperado}</td><td>${d.conteo_fisico??'—'}</td><td>${d.diferencia??'—'}</td></tr>`).join('')}</tbody></table></div>`;$('invPreviewBtn').onclick=()=>previsualizarInventario(id);$('invPrintBtn').onclick=()=>imprimirInventario(id);$('invShareBtn').onclick=()=>compartirInventario(id);$('invDownloadBtn').onclick=()=>descargarInventario(id);cerrarDlg('inventoriesDlg');$('inventoryViewDlg').showModal()}
 function crearInventarioDoc(id){const inv=inventarios.find(x=>x.id===id),ds=detallesInventario(id);if(!inv||!window.jspdf)return null;const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});doc.setFontSize(17);doc.text(`LCexpress - Inventario ${inv.numero}`,12,14);doc.setFontSize(8);doc.text(`Inicio: ${dateText(inv.fecha_inicio)}  Cierre: ${inv.fecha_cierre?dateText(inv.fecha_cierre):'EN CONTEO'}  Participantes: ${nombresParticipantesInventario(inv.id).join(', ')||inv.creado_por_nombre||''}  Autorizó: ${inv.autorizado_por_nombre||'—'}`,12,20);doc.autoTable({startY:25,head:[['Código','Producto','Inicial','Entradas','Vendido','Otras sal.','Esperado','Físico','Dif.']],body:ds.map(d=>[d.codigo||'S/C',d.descripcion,d.inventario_inicial,d.entradas,d.vendido,d.otras_salidas,d.esperado,d.conteo_fisico??'',d.diferencia??'']),styles:{fontSize:6.7},headStyles:{fillColor:[15,23,42]},margin:{left:8,right:8},columnStyles:{1:{cellWidth:75}}});return doc}
 function descargarInventario(id){const inv=inventarios.find(x=>x.id===id),doc=crearInventarioDoc(id);if(inv&&doc)doc.save(`LCexpress_${inv.numero}.pdf`)}
@@ -1357,49 +1323,17 @@ function exportarPDF(){if(!window.jspdf){alert('La exportación PDF requiere con
 /* CONFIG, BACKUP, IMPORT */
 function abrirConfiguracion(){if(!exigirAdmin())return;$('cfgPedidoPrefijo').value=settings.pedidoPrefijo||'PED';$('cfgPedidoNumero').value=settings.pedidoNumero||1;$('configDlg').showModal()}
 async function guardarConfig(e){e.preventDefault();settings.pedidoPrefijo=$('cfgPedidoPrefijo').value.trim().toUpperCase()||'PED';settings.pedidoNumero=Math.max(1,+$('cfgPedidoNumero').value||1);await putStore('settings',settings);cerrarDlg('configDlg');toast('Configuración guardada')}
-async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.9.9',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
-async function restaurarBackup(e){const f=e.target.files[0];if(!f)return;try{const b=JSON.parse(await f.text());if(b.app!=='LCexpress')throw 0;if(!confirm('¿Restaurar este backup? Se reemplazarán inventario, clientes, pedidos, rutas y configuración actuales.'))return;await replaceStore('productos',b.productos||[]);await replaceStore('clientes',b.clientes||[]);await replaceStore('pedidos',b.pedidos||[]);await replaceStore('rutas',b.rutas||[]);if(b.inventarios)await replaceStore('inventarios',b.inventarios||[]);if(b.inventarioDetalle)await replaceStore('inventario_detalle',b.inventarioDetalle||[]);if(b.inventarioParticipantes)await replaceStore('inventario_participantes',b.inventarioParticipantes||[]);if(b.inventarioMovimientos)await replaceStore('inventario_movimientos',b.inventarioMovimientos||[]);await replaceStore('settings',[b.settings||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1}]);await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();toast('Backup restaurado')}catch{alert('El archivo no es un backup válido de LCexpress.')}finally{e.target.value=''}}
-async function importarExcel(e){if(!exigirAdmin()){e.target.value='';return;}const f=e.target.files[0];if(!f||typeof XLSX==='undefined')return;const wb=XLSX.read(await f.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),pick=(r,names)=>{for(const k of Object.keys(r))if(names.includes(norm(k)))return r[k];return''};const list=rows.map((r,i)=>({id:'x'+Date.now()+i,codigo:txt(pick(r,['codigo','código'])),descripcion:txt(pick(r,['descripcion','descripción','producto'])).trim().toUpperCase(),cantidad:+pick(r,['cantidad','cant'])||0,precio:+pick(r,['precio','precio unitario'])||0,caja:txt(pick(r,['caja','cajas'])).toUpperCase(),maleta:txt(pick(r,['maleta'])).toUpperCase(),cantidadMaleta:+pick(r,['cantidad maleta','cantidad en maleta'])||0,categoria:txt(pick(r,['categoria','categoría'])||'GENERAL').toUpperCase(),notas:'',actualizado:new Date().toISOString()})).filter(p=>p.descripcion);if(!list.length){alert('No se reconocieron filas del Excel.');return}if(confirm(`Se encontraron ${list.length} productos. ¿Reemplazar el inventario actual?`)){await replaceStore('productos',list);productos=await getAllStore('productos');llenarFiltros();renderProductos();toast('Inventario importado')}e.target.value=''}
-async function reiniciarBase(){
-  if(!exigirAdmin())return;
-  cerrarMenu();
-  if(!navigator.onLine){alert('Esta operación crítica requiere Internet para volver a validar la contraseña del administrador.');return}
-  $('restoreAdminName').value=perfilNombre(currentProfile,authSession);
-  $('restoreAdminPassword').value='';
-  $('restoreConfirmText').value='';
-  $('restoreCatalogMsg').style.display='none';
-  $('restoreCatalogDlg').showModal();
-  setTimeout(()=>$('restoreAdminPassword').focus(),100);
-}
-async function confirmarRestauracionCatalogo(e){
-  e.preventDefault();
-  if(!esAdmin()){cerrarDlg('restoreCatalogDlg');alert('Solo un administrador puede realizar esta operación.');return}
-  const pass=$('restoreAdminPassword').value;
-  const confirmText=$('restoreConfirmText').value.trim().toUpperCase();
-  const msg=$('restoreCatalogMsg');
-  if(confirmText!=='RESTAURAR'){msg.textContent='Para continuar debe escribir exactamente RESTAURAR.';msg.style.display='block';return}
-  if(!pass){msg.textContent='Ingrese la contraseña del administrador.';msg.style.display='block';return}
-  const btn=$('restoreCatalogBtn');btn.disabled=true;btn.textContent='Validando…';msg.style.display='none';
-  try{
-    const email=authSession?.user?.email||currentProfile?.email;
-    if(!email)throw new Error('No se pudo determinar el correo del administrador conectado.');
-    const temp=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lc-restore-'+Date.now()}});
-    const {data,error}=await temp.auth.signInWithPassword({email,password:pass});
-    if(error||data?.user?.id!==currentProfile?.id)throw new Error('Contraseña incorrecta. Debe autenticarse el mismo administrador que está conectado.');
-    try{await temp.auth.signOut({scope:'local'})}catch{}
-    btn.textContent='Creando backup…';
-    await hacerBackup();
-    const actuales=productos.length;
-    const iniciales=DATOS_INICIALES.length;
-    if(!confirm(`ÚLTIMA CONFIRMACIÓN\n\nSe reemplazarán ${actuales} productos actuales por ${iniciales} registros del catálogo inicial.\n\nEl backup ya fue creado. ¿Desea continuar?`))return;
-    btn.textContent='Restaurando…';
-    await replaceStore('productos',DATOS_INICIALES);
-    productos=await getAllStore('productos');
-    llenarFiltros();renderProductos();
-    cerrarDlg('restoreCatalogDlg');
-    toast('Catálogo inicial restaurado. Revise y sincronice antes de continuar operaciones.');
-  }catch(err){msg.textContent=err?.message||'No se pudo autorizar la restauración.';msg.style.display='block'}
-  finally{btn.disabled=false;btn.textContent='Crear backup y restaurar'}
+async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.10.1',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,inventarioAportes,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
+async function restaurarBackup(e){const f=e.target.files[0];if(!f)return;try{const b=JSON.parse(await f.text());if(b.app!=='LCexpress')throw 0;if(!confirm('¿Restaurar este backup? Se reemplazarán inventario, clientes, pedidos, rutas y configuración actuales.'))return;await replaceStore('productos',b.productos||[]);await replaceStore('clientes',b.clientes||[]);await replaceStore('pedidos',b.pedidos||[]);await replaceStore('rutas',b.rutas||[]);if(b.inventarios)await replaceStore('inventarios',b.inventarios||[]);if(b.inventarioDetalle)await replaceStore('inventario_detalle',b.inventarioDetalle||[]);if(b.inventarioParticipantes)await replaceStore('inventario_participantes',b.inventarioParticipantes||[]);if(b.inventarioMovimientos)await replaceStore('inventario_movimientos',b.inventarioMovimientos||[]);if(b.inventarioAportes)await replaceStore('inventario_aportes',b.inventarioAportes||[]);await replaceStore('settings',[b.settings||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1}]);await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();toast('Backup restaurado')}catch{alert('El archivo no es un backup válido de LCexpress.')}finally{e.target.value=''}}
+async function importarExcel(e){
+  if(!exigirAdmin()){e.target.value='';return}const f=e.target.files[0];if(!f||typeof XLSX==='undefined')return;
+  const wb=XLSX.read(await f.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),pick=(r,names)=>{for(const k of Object.keys(r))if(names.includes(norm(k)))return r[k];return''};
+  const list=rows.map((r,i)=>({id:'x'+Date.now()+i,codigo:limpiarCodigoProducto(pick(r,['codigo','código'])),descripcion:txt(pick(r,['descripcion','descripción','producto'])).trim().toUpperCase(),cantidad:+pick(r,['cantidad','cant'])||0,precio:+pick(r,['precio','precio unitario'])||0,caja:txt(pick(r,['caja','cajas'])).toUpperCase(),maleta:txt(pick(r,['maleta'])).toUpperCase(),cantidadMaleta:+pick(r,['cantidad maleta','cantidad en maleta'])||0,categoria:txt(pick(r,['categoria','categoría'])||'GENERAL').toUpperCase(),notas:'',actualizado:new Date().toISOString()})).filter(p=>p.descripcion);
+  if(!list.length){alert('No se reconocieron filas del Excel.');return}
+  const vistos=new Map(),dups=[];for(const p of list){const c=codigoComparable(p.codigo);if(!c)continue;if(vistos.has(c))dups.push([vistos.get(c),p]);else vistos.set(c,p)}
+  if(dups.length){alert(`El Excel contiene ${dups.length} código(s) duplicado(s). No se importó para proteger el catálogo.\n\nPrimer duplicado: ${dups[0][0].codigo}\n${dups[0][0].descripcion}\n${dups[0][1].descripcion}`);e.target.value='';return}
+  if(confirm(`Se encontraron ${list.length} productos sin códigos duplicados. ¿Reemplazar el inventario actual?`)){await replaceStore('productos',list);productos=await getAllStore('productos');llenarFiltros();renderProductos();toast('Inventario importado')}
+  e.target.value=''
 }
 function abrirCentroMas(){$('moreCenterDlg').showModal()}
 function toggleMenu(){abrirCentroMas()}

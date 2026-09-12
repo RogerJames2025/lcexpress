@@ -25,3 +25,4 @@ streams:
       - SELECT * FROM inventarios
       - SELECT * FROM inventario_detalle
       - SELECT * FROM inventario_participantes
+      - SELECT * FROM inventario_aportes

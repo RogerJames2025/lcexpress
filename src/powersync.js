@@ -81,6 +81,12 @@ const inventario_participantes = new Table({
   ultimo_latido: column.text, activo: column.integer, actualizado: column.text
 }, { indexes: { inventario: ['inventario_id'], usuario: ['usuario_id'] } });
 
+const inventario_aportes = new Table({
+  inventario_id: column.text, producto_id: column.text, cantidad: column.real,
+  contado_por_id: column.text, contado_por_nombre: column.text, device_id: column.text,
+  contado_en: column.text, actualizado: column.text, eliminado_en: column.text
+}, { indexes: { inventario: ['inventario_id'], producto: ['producto_id'], device: ['device_id'] } });
+
 const perfiles = new Table({
   nombre: column.text, apellido: column.text, email: column.text, rol: column.text,
   activo: column.integer, vendedor_codigo: column.text, creado_en: column.text, actualizado: column.text
@@ -88,7 +94,7 @@ const perfiles = new Table({
 
 const AppSchema = new Schema({
   productos, clientes, rutas, pedidos, pedido_detalle,
-  inventario_movimientos, inventarios, inventario_detalle, inventario_participantes, configuracion, perfiles, categorias_producto, cajas, maletas
+  inventario_movimientos, inventarios, inventario_detalle, inventario_participantes, inventario_aportes, configuracion, perfiles, categorias_producto, cajas, maletas
 });
 
 export const db = new PowerSyncDatabase({
@@ -164,7 +170,7 @@ class LCConnector {
     const priority = {
       productos: 10, clientes: 20, rutas: 30, inventarios: 35,
       pedidos: 40, pedido_detalle: 50, inventario_detalle: 55,
-      inventario_participantes: 56, inventario_movimientos: 60, configuracion: 90
+      inventario_participantes: 56, inventario_aportes: 57, inventario_movimientos: 60, configuracion: 90
     };
     const ops = [...tx.crud].sort((a,b)=>(priority[a.table]??70)-(priority[b.table]??70));
 
@@ -369,6 +375,7 @@ async function getAll(store) {
   if (store === 'inventarios') return await db.getAll('SELECT * FROM inventarios ORDER BY fecha_inicio DESC');
   if (store === 'inventario_detalle') return await db.getAll('SELECT * FROM inventario_detalle');
   if (store === 'inventario_participantes') return await db.getAll('SELECT * FROM inventario_participantes');
+  if (store === 'inventario_aportes') return await db.getAll("SELECT * FROM inventario_aportes WHERE eliminado_en IS NULL OR eliminado_en = ''");
   if (store === 'perfiles') return await db.getAll('SELECT * FROM perfiles WHERE activo = 1 OR activo = true');
   if (store === 'categorias_producto' || store === 'cajas' || store === 'maletas') return await db.getAll(`SELECT * FROM ${store} WHERE eliminado_en IS NULL OR eliminado_en = '' ORDER BY orden, nombre`);
   return [];
@@ -384,7 +391,7 @@ async function put(store, obj) {
     const data = { nombre: obj.nombre || '', activo: obj.activo === false ? 0 : (obj.activo === 0 ? 0 : 1), orden: Number(obj.orden || 0), actualizado: obj.actualizado || new Date().toISOString(), eliminado_en: obj.eliminado_en || null };
     return writeRecord(store, obj.id, data);
   }
-  if (store === 'inventario_movimientos' || store === 'inventarios' || store === 'inventario_detalle' || store === 'inventario_participantes') {
+  if (store === 'inventario_movimientos' || store === 'inventarios' || store === 'inventario_detalle' || store === 'inventario_participantes' || store === 'inventario_aportes') {
     const data = { ...obj }; delete data.id;
     return writeRecord(store, obj.id, data);
   }
@@ -409,7 +416,7 @@ async function replace(store, list) {
     return;
   }
   const table = store;
-  if (!['productos','clientes','rutas','pedidos','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','categorias_producto','cajas','maletas'].includes(table)) return;
+  if (!['productos','clientes','rutas','pedidos','inventario_movimientos','inventarios','inventario_detalle','inventario_participantes','inventario_aportes','categorias_producto','cajas','maletas'].includes(table)) return;
   const existing = await getAll(store);
   const incoming = new Set(list.map(x=>x.id));
   for (const row of existing) if (!incoming.has(row.id)) await del(store,row.id);
