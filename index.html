@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.10.1 PowerSync</title>
+<title>LCexpress v10.10.2 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -58,7 +58,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.10.1</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.10.2</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -652,7 +652,7 @@ async function mostrarEstadoCloud(){
   let st={pending:0,connected:false,hasSynced:false};
   try{const c=await esperarCloud();st=c.syncDiagnostics?await c.syncDiagnostics():await c.syncStatus()}catch(e){st.diagnosticError=String(e?.message||e)}
   const au=await diagnosticoAuthNube();
-  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.10.1<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
+  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.10.2<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
   $('cloudDlg').showModal();
 }
 async function sincronizarAhora(){
@@ -798,7 +798,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
   });
-  navigator.serviceWorker.register('/sw.js?v=10.10.1',{updateViaCache:'none'}).then(reg=>{
+  navigator.serviceWorker.register('/sw.js?v=10.10.2',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
@@ -1187,7 +1187,7 @@ function solicitarAutorizacionAdmin(titulo='Autorización de administrador'){if(
 function cancelarAutorizacionAdmin(){cerrarDlg('adminAuthDlg');if(pendingAdminAuth){pendingAdminAuth(null);pendingAdminAuth=null}}
 async function confirmarAutorizacionAdmin(e){e.preventDefault();const id=$('adminAuthUser').value,a=adminsActivos().find(x=>x.id===id),pass=$('adminAuthPassword').value;if(!a||!pass)return;const btn=$('adminAuthBtn');btn.disabled=true;btn.textContent='Validando…';$('adminAuthMsg').style.display='none';try{const temp=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lc-auth-'+Date.now()}});const {data,error}=await temp.auth.signInWithPassword({email:a.email,password:pass});if(error||data?.user?.id!==a.id)throw new Error('Contraseña incorrecta o usuario no autorizado.');try{await temp.auth.signOut({scope:'local'})}catch{}const result={id:a.id,nombre:[a.nombre,a.apellido].filter(Boolean).join(' '),email:a.email};cerrarDlg('adminAuthDlg');const r=pendingAdminAuth;pendingAdminAuth=null;if(r)r(result)}catch(err){$('adminAuthMsg').textContent=err?.message||'No se pudo validar la autorización.';$('adminAuthMsg').style.display='block'}finally{btn.disabled=false;btn.textContent='Autorizar'}}
 
-// ===================== INVENTARIO FÍSICO COLABORATIVO v10.10.1 =====================
+// ===================== INVENTARIO FÍSICO COLABORATIVO v10.10.2 =====================
 function siguienteInventarioNumero(){return 'INV'+String(settings.inventarioNumero||1).padStart(6,'0')}
 function detallesInventario(id){return inventarioDetalle.filter(d=>d.inventario_id===id)}
 function aportesInventario(invId,pid=null){return inventarioAportes.filter(a=>a.inventario_id===invId&&(!pid||a.producto_id===pid)&&!a.eliminado_en)}
@@ -1323,7 +1323,7 @@ function exportarPDF(){if(!window.jspdf){alert('La exportación PDF requiere con
 /* CONFIG, BACKUP, IMPORT */
 function abrirConfiguracion(){if(!exigirAdmin())return;$('cfgPedidoPrefijo').value=settings.pedidoPrefijo||'PED';$('cfgPedidoNumero').value=settings.pedidoNumero||1;$('configDlg').showModal()}
 async function guardarConfig(e){e.preventDefault();settings.pedidoPrefijo=$('cfgPedidoPrefijo').value.trim().toUpperCase()||'PED';settings.pedidoNumero=Math.max(1,+$('cfgPedidoNumero').value||1);await putStore('settings',settings);cerrarDlg('configDlg');toast('Configuración guardada')}
-async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.10.1',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,inventarioAportes,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
+async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.10.2',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,inventarioAportes,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
 async function restaurarBackup(e){const f=e.target.files[0];if(!f)return;try{const b=JSON.parse(await f.text());if(b.app!=='LCexpress')throw 0;if(!confirm('¿Restaurar este backup? Se reemplazarán inventario, clientes, pedidos, rutas y configuración actuales.'))return;await replaceStore('productos',b.productos||[]);await replaceStore('clientes',b.clientes||[]);await replaceStore('pedidos',b.pedidos||[]);await replaceStore('rutas',b.rutas||[]);if(b.inventarios)await replaceStore('inventarios',b.inventarios||[]);if(b.inventarioDetalle)await replaceStore('inventario_detalle',b.inventarioDetalle||[]);if(b.inventarioParticipantes)await replaceStore('inventario_participantes',b.inventarioParticipantes||[]);if(b.inventarioMovimientos)await replaceStore('inventario_movimientos',b.inventarioMovimientos||[]);if(b.inventarioAportes)await replaceStore('inventario_aportes',b.inventarioAportes||[]);await replaceStore('settings',[b.settings||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1}]);await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();toast('Backup restaurado')}catch{alert('El archivo no es un backup válido de LCexpress.')}finally{e.target.value=''}}
 async function importarExcel(e){
   if(!exigirAdmin()){e.target.value='';return}const f=e.target.files[0];if(!f||typeof XLSX==='undefined')return;

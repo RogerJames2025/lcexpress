@@ -337,7 +337,7 @@ BEGIN
     forma_pago,pago_efectivo,pago_tarjeta,pago_transferencia,efectivo_recibido,cambio,estado,actualizado,eliminado_en
   ) VALUES (
     v_id,p_pedido->>'numero',(p_pedido->>'fecha')::timestamptz,NULLIF(p_pedido->>'cliente_id',''),COALESCE(p_pedido->>'cliente_nombre',''),COALESCE(p_pedido->>'cliente_comercio',''),COALESCE(p_pedido->>'cliente_telefono',''),COALESCE(p_pedido->>'cliente_telefono2',''),COALESCE(p_pedido->>'cliente_correo',''),COALESCE(p_pedido->>'cliente_direccion',''),
-    COALESCE(p_pedido->>'departamento',''),COALESCE(p_pedido->>'municipio',''),COALESCE(p_pedido->>'distrito',''),COALESCE(p_pedido->>'cliente_ruta',''),NULLIF(p_pedido->>'ruta_id',''),COALESCE(p_pedido->>'ruta_nombre',''),COALESCE(p_pedido->>'comprobante','RECIBO'),COALESCE((p_pedido->>'total')::numeric,0),COALESCE((p_pedido->>'items_total')::numeric,0),COALESCE((p_pedido->>'modificado')::boolean,false),COALESCE((p_pedido->'modificaciones')::text,'[]'),
+    COALESCE(p_pedido->>'departamento',''),COALESCE(p_pedido->>'municipio',''),COALESCE(p_pedido->>'distrito',''),COALESCE(p_pedido->>'cliente_ruta',''),NULLIF(p_pedido->>'ruta_id',''),COALESCE(p_pedido->>'ruta_nombre',''),COALESCE(p_pedido->>'comprobante','RECIBO'),COALESCE((p_pedido->>'total')::numeric,0),COALESCE((p_pedido->>'items_total')::numeric,0),COALESCE((p_pedido->>'modificado')::boolean,false),COALESCE(p_pedido->'modificaciones','[]'::jsonb),
     COALESCE(p_pedido->>'forma_pago','EFECTIVO'),COALESCE((p_pedido->>'pago_efectivo')::numeric,0),COALESCE((p_pedido->>'pago_tarjeta')::numeric,0),COALESCE((p_pedido->>'pago_transferencia')::numeric,0),COALESCE((p_pedido->>'efectivo_recibido')::numeric,0),COALESCE((p_pedido->>'cambio')::numeric,0),'ACTIVO',v_now,NULL
   )
   ON CONFLICT(id) DO UPDATE SET
