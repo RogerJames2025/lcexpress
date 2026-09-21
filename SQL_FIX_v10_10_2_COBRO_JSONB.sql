@@ -108,7 +108,7 @@ BEGIN
     VALUES(
       v_item->>'detalle_id',v_id,NULLIF(v_item->>'producto_id',''),COALESCE(v_item->>'codigo',''),COALESCE(v_item->>'descripcion',''),
       COALESCE((v_item->>'cantidad')::numeric,0),COALESCE((v_item->>'precio')::numeric,0),COALESCE((v_item->>'precio_decimales')::integer,2),COALESCE((v_item->>'subtotal')::numeric,0),
-      NULLIF(v_item->>'vendedor_id',''),COALESCE(v_item->>'vendedor_nombre',''),v_now,NULL
+      NULLIF(v_item->>'vendedor_id','')::uuid,COALESCE(v_item->>'vendedor_nombre',''),v_now,NULL
     );
   END LOOP;
 
