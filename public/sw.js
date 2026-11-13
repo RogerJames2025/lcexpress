@@ -1,47 +1,12 @@
-const CACHE='lcexpress-v10.10.2';
-const CORE=['/','/index.html','/manifest.webmanifest','/icon-192.png','/icon-512.png'];
-const EXTERNAL=[
-'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
-'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js',
-'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
-'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js'
-];
-async function cacheBuiltAssets(cache){
-  try{
-    const r=await fetch('/index.html',{cache:'reload'});
-    if(r.ok){
-      await cache.put('/index.html',r.clone());
-      const text=await r.text(),urls=new Set();
-      for(const m of text.matchAll(/(?:src|href)=["']([^"'#]+)["']/g)){
-        try{const u=new URL(m[1],self.location.origin);if(u.origin===self.location.origin)urls.add(u.pathname+u.search)}catch{}
-      }
-      for(const u of urls){try{const a=await fetch(u,{cache:'reload'});if(a.ok)await cache.put(u,a.clone())}catch{}}
-    }
-  }catch{}
-}
-self.addEventListener('install',event=>event.waitUntil((async()=>{
-  const cache=await caches.open(CACHE);
-  for(const u of CORE){try{await cache.add(u)}catch{}}
-  for(const u of EXTERNAL){try{await cache.add(u)}catch{}}
-  await cacheBuiltAssets(cache);
-  await self.skipWaiting();
-})()));
-self.addEventListener('activate',event=>event.waitUntil((async()=>{
-  const keys=await caches.keys();await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));
-  const cache=await caches.open(CACHE);await cacheBuiltAssets(cache);await self.clients.claim();
-})()));
-self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting()});
-self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET')return;
-  const req=event.request,isNav=req.mode==='navigate';
-  if(isNav){
-    event.respondWith((async()=>{try{const fresh=await fetch(req,{cache:'reload'}),cache=await caches.open(CACHE);if(fresh.ok)cache.put('/index.html',fresh.clone());return fresh}catch{return(await caches.match('/index.html'))||Response.error()}})());
-    return;
-  }
-  event.respondWith((async()=>{
-    const cached=await caches.match(req);
-    const net=fetch(req).then(async r=>{if(r&&r.ok){const cache=await caches.open(CACHE);cache.put(req,r.clone())}return r}).catch(()=>null);
-    return cached||await net||Response.error();
-  })());
-});
+const CACHE='lcexpress-v10.11.0-cierre-monetario';
+const EXTERNAL=["https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js", "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js", "https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js", "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js", "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"];
+const CORE=['/','/index.html','/manifest.webmanifest','/icon-192.png','/icon-512.png','/lc-config.js'];
+self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(CACHE);await c.addAll(CORE);const manifest=await fetch('/lc-assets.json',{cache:'no-store'});if(!manifest.ok)throw Error('Inventario de recursos ausente');const assets=await manifest.json();if(!Array.isArray(assets)||!assets.length||assets.some(x=>typeof x!=='string'||!x.startsWith('assets/')||x.includes('..')))throw Error('Inventario de recursos inválido');await c.addAll(assets.map(x=>'/'+x));for(const url of EXTERNAL){const req=new Request(url,{mode:"no-cors"});const res=await fetch(req);if(!res.ok&&res.type!=="opaque")throw Error("Recurso externo no disponible");await c.put(req,res);}const r=await c.match('/index.html');const html=await r.text();for(const m of html.matchAll(/(?:src|href)=["']([^"'#]+)["']/g)){const u=new URL(m[1],self.location.origin);if(u.origin===self.location.origin&&u.pathname.startsWith('/assets/'))await c.add(u.href);}})()));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('lcexpress-')&&k!==CACHE)await caches.delete(k);await self.clients.claim()})()));
+self.addEventListener('message',e=>{if(e.data?.type==='SKIP_WAITING')self.skipWaiting()});
+self.addEventListener('fetch',e=>{const r=e.request,u=new URL(r.url);if(r.method!=='GET'||r.headers.has('authorization'))return;
+ if(EXTERNAL.includes(u.href)){e.respondWith((async()=>{const c=await caches.open(CACHE);return (await c.match(r))||fetch(r)})());return;}
+ if(u.origin!==self.location.origin)return;
+ if(r.mode==='navigate'){e.respondWith((async()=>{return (await (await caches.open(CACHE)).match('/index.html'))||fetch(r)})());return;}
+ if(!CORE.includes(u.pathname)&&!u.pathname.startsWith('/assets/'))return;
+ e.respondWith((async()=>{const c=await caches.open(CACHE);try{const n=await fetch(r);if(n.ok)await c.put(r,n.clone());return n}catch{return (await c.match(r))||Response.error()}})());});

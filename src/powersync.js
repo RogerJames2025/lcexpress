@@ -1,10 +1,11 @@
 import { column, Schema, Table, PowerSyncDatabase, UpdateType, WASQLiteVFS } from '@powersync/web';
 
-const POWERSYNC_URL = 'https://6a761b9d53f73afec8a7b5f0.powersync.journeyapps.com';
+const POWERSYNC_URL = window.LC_CONFIG?.powersyncUrl;
+if(window.LC_CONFIG?.releaseApproved!==true||!POWERSYNC_URL)throw Error('Configuración PowerSync no instalada');
 
 const productos = new Table({
   codigo: column.text, descripcion: column.text, categoria: column.text,
-  cantidad: column.real, precio: column.real, precio_decimales: column.integer, caja: column.text, maleta: column.text,
+  cantidad: column.real, lc_stock_revision: column.integer, precio: column.real, precio_decimales: column.integer, caja: column.text, maleta: column.text,
   cantidad_maleta: column.real, notas: column.text, actualizado: column.text, eliminado_en: column.text
 }, { indexes: { codigo: ['codigo'], descripcion: ['descripcion'] } });
 
@@ -25,7 +26,7 @@ const pedidos = new Table({
   numero: column.text, fecha: column.text, cliente_id: column.text, cliente_nombre: column.text,
   cliente_comercio: column.text, cliente_telefono: column.text, departamento: column.text,
   municipio: column.text, distrito: column.text, cliente_ruta: column.text, ruta_id: column.text,
-  ruta_nombre: column.text, comprobante: column.text, cliente_direccion: column.text, cliente_telefono2: column.text, cliente_correo: column.text, total: column.real, items_total: column.real,
+  ruta_nombre: column.text, comprobante: column.text, cliente_direccion: column.text, cliente_telefono2: column.text, cliente_correo: column.text, total: column.real, puntos_canjeados: column.integer, items_total: column.real,
   modificado: column.integer, modificaciones: column.text, forma_pago: column.text, pago_efectivo: column.real, pago_tarjeta: column.real, pago_transferencia: column.real, efectivo_recibido: column.real, cambio: column.real,
   estado: column.text, motivo_anulacion: column.text, anulado_en: column.text, anulado_por_id: column.text, anulado_por_nombre: column.text,
   anulado_autorizado_por_id: column.text, anulado_autorizado_por_nombre: column.text,
@@ -92,7 +93,15 @@ const perfiles = new Table({
   activo: column.integer, vendedor_codigo: column.text, creado_en: column.text, actualizado: column.text
 });
 
+const lc_cola_local = new Table({ actor: column.text, pedido_id: column.text, solicitud: column.text, estado: column.text, respuesta: column.text, error: column.text }, {localOnly:true, indexes:{actor:['actor'],pedido:['pedido_id']}});
+const lc_migracion_local = new Table({actor:column.text,pedido_id:column.text,contenido:column.text,estado:column.text,respuesta:column.text},{localOnly:true,indexes:{actor:['actor']}});
+const lc_archivo40 = new Table({actor:column.text,fecha:column.text,contenido:column.text,sha:column.text},{localOnly:true});
+const lc_inv_cola37 = new Table({actor:column.text,device:column.text,orden:column.integer,creado:column.text,solicitud:column.text,estado:column.text,respuesta:column.text,error:column.text},{localOnly:true,indexes:{actor:["actor","device"]}});
 const AppSchema = new Schema({
+  lc_archivo40,
+  lc_inv_cola37,
+  lc_migracion_local,
+  lc_cola_local,
   productos, clientes, rutas, pedidos, pedido_detalle,
   inventario_movimientos, inventarios, inventario_detalle, inventario_participantes, inventario_aportes, configuracion, perfiles, categorias_producto, cajas, maletas
 });
@@ -175,6 +184,7 @@ class LCConnector {
     const ops = [...tx.crud].sort((a,b)=>(priority[a.table]??70)-(priority[b.table]??70));
 
     try {
+      if (ops.some(op=>['pedidos','pedido_detalle','productos','inventario_movimientos','perfiles','inventarios','inventario_detalle','inventario_aportes','inventario_participantes'].includes(op.table))) throw new Error('Escritura protegida; cola conservada para revisión');
       for (const op of ops) {
         const table = sb.from(op.table);
         if (op.op === UpdateType.PUT) {
@@ -250,6 +260,7 @@ export async function startPowerSync({ forceReconnect = false } = {}) {
   return db;
 }
 
+function historialSeguro(v){if(v==null)return [];for(let n=0;n<4&&typeof v==='string';n++){try{v=JSON.parse(v)}catch{return [v]}}return Array.isArray(v)?v:[v]}
 function parseJSON(value, fallback = []) {
   if (Array.isArray(value)) return value;
   if (value == null || value === '') return fallback;
@@ -287,11 +298,11 @@ function settingsToDb(r) {
   return { pedido_prefijo:r.pedidoPrefijo||'PED', pedido_numero:Number(r.pedidoNumero||1), cliente_numero:Number(r.clienteNumero||1), ruta_numero:Number(r.rutaNumero||1), inventario_numero:Number(r.inventarioNumero||1), actualizado:new Date().toISOString() };
 }
 function pedidoHeaderToApp(r) {
-  return {
+  return { puntosCanjeados:Number(r.puntos_canjeados||0),
     id:r.id, numero:r.numero, fecha:r.fecha, clienteId:r.cliente_id, clienteNombre:r.cliente_nombre||'', clienteComercio:r.cliente_comercio||'',
     clienteTelefono:r.cliente_telefono||'', clienteTelefono2:r.cliente_telefono2||'', clienteCorreo:r.cliente_correo||'', clienteDireccion:r.cliente_direccion||'', departamento:r.departamento||'', municipio:r.municipio||'', distrito:r.distrito||'', clienteRuta:r.cliente_ruta||'',
     rutaId:r.ruta_id, rutaNombre:r.ruta_nombre||'', comprobante:r.comprobante||'RECIBO', total:Number(r.total||0), itemsTotal:Number(r.items_total||0),
-    modificado:!!r.modificado, modificaciones:parseJSON(r.modificaciones,[]), formaPago:r.forma_pago||'EFECTIVO', pagoEfectivo:Number(r.pago_efectivo||0), pagoTarjeta:Number(r.pago_tarjeta||0), pagoTransferencia:Number(r.pago_transferencia||0), efectivoRecibido:Number(r.efectivo_recibido||0), cambio:Number(r.cambio||0),
+    modificado:!!r.modificado, modificaciones:historialSeguro(r.modificaciones), formaPago:r.forma_pago||'EFECTIVO', pagoEfectivo:Number(r.pago_efectivo||0), pagoTarjeta:Number(r.pago_tarjeta||0), pagoTransferencia:Number(r.pago_transferencia||0), efectivoRecibido:Number(r.efectivo_recibido||0), cambio:Number(r.cambio||0),
     estado:r.estado||'ACTIVO', motivoAnulacion:r.motivo_anulacion||'', anuladoEn:r.anulado_en||null, anuladoPorId:r.anulado_por_id||null, anuladoPorNombre:r.anulado_por_nombre||'',
     anuladoAutorizadoPorId:r.anulado_autorizado_por_id||null, anuladoAutorizadoPorNombre:r.anulado_autorizado_por_nombre||'', actualizado:r.actualizado, items:[]
   };
@@ -335,8 +346,7 @@ async function getPedidos() {
   }
   for (const p of map.values()) {
     p.items.sort((a,b)=>(a.descripcion||'').localeCompare(b.descripcion||'','es'));
-    p.itemsTotal = p.items.reduce((s,i)=>s+Number(i.cantidad||0),0);
-    p.total = p.items.reduce((s,i)=>s+Number(i.subtotal||0),0);
+    // Conservar totales oficiales; no sustituirlos por una reconstrucción local.
   }
   return [...map.values()];
 }
@@ -382,7 +392,14 @@ async function getAll(store) {
 }
 
 async function put(store, obj) {
-  if (store === 'productos') return writeRecord('productos', obj.id, productoToDb(obj));
+  if (store === 'productos') {
+    const data=productoToDb(obj); const old=(await db.getAll('SELECT * FROM productos WHERE id=?',[obj.id]))[0];
+    if((!old && Number(data.cantidad)!==0) || (old && Number(old.cantidad)!==Number(data.cantidad)) || data.eliminado_en) throw Error('El alta debe iniciar en cero; ajustes y bajas requieren procedimiento autorizado');
+    const campos=['codigo','descripcion','categoria','precio','precio_decimales','caja','maleta','cantidad_maleta','notas'];
+    const payload=Object.fromEntries(campos.filter(k=>Object.hasOwn(data,k)).map(k=>[k,data[k]]));
+    const {error}=await supabaseClient().rpc(old?'lc_producto_metadata34':'lc_producto_alta35',{p_id:obj.id,p_datos:payload}); if(error)throw error; return;
+  }
+  if (store === 'perfiles') {const {error}=await supabaseClient().rpc('lc_perfil35',{p_id:obj.id,p_nombre:obj.nombre,p_apellido:obj.apellido,p_codigo:obj.vendedor_codigo||''});if(error)throw error;return;}
   if (store === 'clientes') return writeRecord('clientes', obj.id, clienteToDb(obj));
   if (store === 'rutas') return writeRecord('rutas', obj.id, rutaToDb(obj));
   if (store === 'pedidos') return putPedido(obj);
@@ -392,12 +409,13 @@ async function put(store, obj) {
     return writeRecord(store, obj.id, data);
   }
   if (store === 'inventario_movimientos' || store === 'inventarios' || store === 'inventario_detalle' || store === 'inventario_participantes' || store === 'inventario_aportes') {
-    const data = { ...obj }; delete data.id;
-    return writeRecord(store, obj.id, data);
+    throw Error('Inventario protegido: utilice lc_inventario36');
   }
 }
 
 async function del(store, id) {
+  if(store==='productos'){const {error}=await supabaseClient().rpc('lc_producto_baja35',{p_id:id});if(error)throw error;return;}
+  if(['pedidos','perfiles','inventarios','inventario_detalle','inventario_movimientos','inventario_aportes','inventario_participantes'].includes(store))throw Error('Borrado protegido; utilice el procedimiento autorizado');
   if (store === 'pedidos') {
     await db.writeTransaction(async tx => {
       await tx.execute('DELETE FROM pedido_detalle WHERE pedido_id = ?', [id]);
@@ -411,6 +429,7 @@ async function del(store, id) {
 }
 
 async function replace(store, list) {
+  if(['productos','pedidos','perfiles','inventarios','inventario_detalle','inventario_movimientos','inventario_aportes','inventario_participantes'].includes(store))throw Error('Restauración masiva protegida; no se modificaron registros de este catálogo');
   if (store === 'settings') {
     await put('settings', list[0] || {id:'config',pedidoPrefijo:'PED',pedidoNumero:1,clienteNumero:1,rutaNumero:1});
     return;
@@ -510,8 +529,42 @@ async function syncDiagnostics() {
 }
 
 
-window.LCCloud = {
-  db, startPowerSync, getAll, put, del, replace, anularPedidoAtomic, pendingCount, profile, syncStatus, syncNow, syncDiagnostics,
+// Exportación de la primera transacción pendiente: no avanza ni completa la cola.
+async function exportarPendiente35(){
+ const tx=await db.getNextCrudTransaction();
+ const {data,error}=await supabaseClient().auth.getSession();if(error)throw error;
+ const actor=data?.session?.user?.id;if(!actor)throw Error('Sesión requerida');
+ const out={formato:'LCexpress-powersync-cabecera-35',actor,base:'lcexpress-v10.sqlite',fecha:new Date().toISOString(),operaciones:tx?tx.crud.map(x=>({table:x.table,id:x.id,op:x.op,opData:x.opData??null})):[]};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='LCexpress_pendiente_'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return out.operaciones.length;
+}
+// Exporta la cola interna completa sin completar ninguna transacción.
+async function exportarIntegral38(){
+ const {data,error}=await supabaseClient().auth.getSession();if(error)throw error;const actor=data?.session?.user?.id;if(!actor)throw Error('Sesión requerida');
+ const out=await db.readTransaction(async tx=>({formato:'LCexpress-integral40',actor,base:'lcexpress-v10.sqlite',fecha:new Date().toISOString(),ps_crud:await tx.getAll('SELECT * FROM ps_crud ORDER BY id'),inventario:await tx.getAll('SELECT * FROM lc_inv_cola37 WHERE actor=? ORDER BY device,orden',[actor]),pedidos:await tx.getAll('SELECT * FROM lc_cola_local WHERE actor=?',[actor]),migracion:await tx.getAll('SELECT * FROM lc_migracion_local WHERE actor=?',[actor]),archivos:await tx.getAll('SELECT * FROM lc_archivo40 WHERE actor=?',[actor]),pendientes_raw:localStorage.getItem('lcexpress_offline_pending_v2'),pendientes_v40_raw:localStorage.getItem('lcexpress_offline_pending_v40')}));
+ const url=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='LCexpress_integral_'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return out;
+}
+async function reconciliarMixta38(){
+ const tx=await db.getNextCrudTransaction();if(!tx)throw Error('Sin transacciones pendientes');const ops=tx.crud.map(o=>({table:o.table,id:o.id,op:o.op,opData:o.opData??null}));
+ const {data,error}=await supabaseClient().rpc('lc_reconciliar40',{p_ops:ops});if(error)throw error;if(!data?.ok)throw Error('Conservada: '+JSON.stringify(data));
+ if(!confirm('Todos los campos enviados coinciden actualmente con el servidor. Esto no prueba el historial. ¿Completar esta transacción sin repetir escrituras?\n'+JSON.stringify(ops)))return;
+ const head=await db.getNextCrudTransaction();if(!head||JSON.stringify(head.crud.map(o=>({table:o.table,id:o.id,op:o.op,opData:o.opData??null})))!==JSON.stringify(ops))throw Error('La cabecera cambió; vuelva a revisar');
+ const check=await supabaseClient().rpc('lc_reconciliar40',{p_ops:ops});if(check.error||!check.data?.ok)throw Error('La coincidencia cambió; se conserva la transacción');await head.complete();alert('Transacción completada sin repetir escrituras');
+}
+async function importarArchivo40(file){
+ const {data,error}=await supabaseClient().auth.getSession();if(error)throw error;
+ const actor=data?.session?.user?.id;if(!actor)throw Error('Sesión requerida');
+ if(!file || file.size>100*1024*1024)throw Error('Archivo ausente o superior a 100 MB; conservar original');
+ const bytes=await file.arrayBuffer();const raw=new TextDecoder('utf-8',{fatal:true}).decode(bytes);const obj=JSON.parse(raw);
+ if(!['LCexpress-produccion38','LCexpress-produccion40','LCexpress-integral38','LCexpress-integral40'].includes(obj.formato)||!Array.isArray(obj.ps_crud))throw Error('Formato no reconocido; conservar original');
+ const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
+ const id=actor+':'+sha;
+ await db.writeTransaction(async tx=>{await tx.execute('INSERT OR IGNORE INTO lc_archivo40(id,actor,fecha,contenido,sha) VALUES(?,?,?,?,?)',[id,actor,new Date().toISOString(),raw,sha]);});
+ return {sha,operaciones:obj.ps_crud.length,estado:'ARCHIVADO_NO_REPRODUCIDO'};
+}
+async function listarArchivos40(){const {data,error}=await supabaseClient().auth.getSession();if(error)throw error;const actor=data?.session?.user?.id;if(!actor)throw Error('Sesión requerida');return db.getAll('SELECT id,fecha,sha FROM lc_archivo40 WHERE actor=? ORDER BY fecha',[actor]);}
+window.LCCloud = { importarArchivo40,listarArchivos40,
+  snapshotToApp: (d)=>({...pedidoHeaderToApp(d.pedido),items:d.items.map(detalleToApp),revision:d.revision}),
+  exportarPendiente35, exportarIntegral38, reconciliarMixta38, db, startPowerSync, getAll, put, del, replace, anularPedidoAtomic, pendingCount, profile, syncStatus, syncNow, syncDiagnostics,
   url: POWERSYNC_URL
 };
 window.dispatchEvent(new CustomEvent('lcexpress-cloud-ready'));
