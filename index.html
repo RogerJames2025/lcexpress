@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>LCexpress v10.11.0 PowerSync</title>
+<title>LCexpress v10.11.1 PowerSync</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -53,6 +53,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 .lc11-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:12px;background:#f1f5f9}.lc11-tabs button{padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:white;cursor:pointer}.lc11-tabs button[aria-selected=true]{background:#164e63;color:white}
 .lc11-content{padding:20px;overflow:auto;max-height:55vh}.lc11-content table{width:100%;border-collapse:collapse}.lc11-content td,.lc11-content th{padding:9px;border-bottom:1px solid #ddd;text-align:left}.lc11-muted{color:#64748b}.lc11-close{background:white;border:0;border-radius:7px;padding:7px 12px;cursor:pointer}
 </style>
+<link rel="stylesheet" href="./src/gestion111.css">
 </head>
 <body>
 <div id="loginGate" class="login-gate">
@@ -69,7 +70,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
   </div>
 </div>
 <header class="top"><div class="topin">
-<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.11.0</small></div></div>
+<div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik05MyAxMDloOTZ2MjE4aDEzMnY3Nkg5M3oiIGZpbGw9IiNmNTllMGIiLz48cGF0aCBkPSJNMzE5IDEwMmgxMDBsLTY2IDExN2g3M0wyNTIgNDExbDU0LTEzOWgtNzJ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="LCexpress"><div><h1>LCexpress</h1><small>Inventario, clientes, pedidos y rutas · v10.11.1</small></div></div>
 <div id="syncStatus" class="sync-pill offline" title="Estado local y de sincronización"><span class="sync-dot"></span><span><span id="syncMain">SIN INTERNET</span><br><span id="syncSub" class="sync-sub">Trabajando localmente</span></span></div>
 <div id="userPill" class="user-pill hidden"><span>👤</span><span><span id="userName">Usuario</span><small id="userRole">—</small></span></div>
 <div class="actions">
@@ -80,6 +81,7 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 <button class="btn purple" onclick="abrirClientes()">👤 Clientes</button>
 <button class="btn green" onclick="abrirSelectorClientePedido()">🧾 Pedido</button>
 <button class="btn blue" onclick="abrirRuta()">🚚 Ruta</button>
+<button class="btn ghost" data-admin-only onclick="window.LCGestion111?.abrir()">▦ Gestión</button>
 <button class="btn ghost" onclick="abrirCentroMas()">☰ Más</button>
 </div></div></header>
 
@@ -684,7 +686,7 @@ async function mostrarEstadoCloud(){
   let st={pending:0,connected:false,hasSynced:false};
   try{const c=await esperarCloud();st=c.syncDiagnostics?await c.syncDiagnostics():await c.syncStatus()}catch(e){st.diagnosticError=String(e?.message||e)}
   const au=await diagnosticoAuthNube();
-  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.11.0<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
+  $('cloudInfo').innerHTML=`<b>Versión:</b> v10.11.1<br><b>Dispositivo:</b> ${esc(getDeviceId())}<br><b>Internet:</b> ${navigator.onLine?'Disponible':'Sin conexión'}<br><b>Supabase Auth:</b> ${esc(au.estado)} — ${esc(au.detalle)}<br><b>Token PowerSync:</b> ${au.token?'Disponible':'No disponible'}<br><b>Usuario nube:</b> ${esc(au.email||'—')}<br><b>PowerSync:</b> ${st.connected?'Conectado':'Desconectado'}<br><b>Conector iniciado:</b> ${st.started===false?'NO':'Sí'}<br><b>Sincronización inicial:</b> ${st.hasSynced?'Completada':'Pendiente'}<br><b>Cambios pendientes:</b> ${st.pending||0}<br><b>Último error de subida:</b> ${st.lastUploadError?esc(st.lastUploadError):'Ninguno'}<br><b>Último intento de subida:</b> ${st.lastUploadAttemptAt?esc(st.lastUploadAttemptAt):'—'}<br><b>Última subida correcta:</b> ${st.lastUploadSuccessAt?esc(st.lastUploadSuccessAt):'—'}<br><b>Primer cambio pendiente:</b> ${st.firstPending?esc(JSON.stringify(st.firstPending)):'Ninguno'}<br><b>Datos locales:</b> ${productos.length} productos · ${clientes.length} clientes · ${pedidos.length} pedidos · ${rutas.length} rutas<br><b>Modo offline:</b> ${(productos.length||clientes.length)?'LISTO':'SIN DATOS LOCALES'}<br><b>Servidor:</b> ${esc(window.LCCloud?.url||'PowerSync')}`;
   $('cloudDlg').showModal();
 }
 async function sincronizarAhora(){
@@ -830,9 +832,9 @@ window.actualizarAplicacion=actualizarAplicacion;
 
 if('serviceWorker' in navigator && window.LC_CONFIG?.releaseApproved === true){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(!window.__lcReloading){window.__lcReloading=true;location.reload()}
+    toast('Actualización disponible. Guarda tu trabajo antes de recargar.');
   });
-  navigator.serviceWorker.register('/sw.js?v=10.11.0',{updateViaCache:'none'}).then(reg=>{
+  navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(reg=>{
     reg.update().catch(()=>{});
     reg.addEventListener('updatefound',()=>{
       const w=reg.installing;if(!w)return;
@@ -1273,7 +1275,7 @@ async function confirmarAutorizacionAdmin(e){
   }
 }
 
-// ===================== INVENTARIO FÍSICO COLABORATIVO v10.11.0 =====================
+// ===================== INVENTARIO FÍSICO COLABORATIVO v10.11.1 =====================
 // Cola SQLite local: FIFO, identidad y UUID estables.
 let inv36Busy=false, inv37Queue=null, inv37Rows=[];
 async function colaInv37(){const actor=authSession?.user?.id,device=getDeviceId();if(!actor)throw Error('Sesión requerida');const c=await esperarCloud();if(!inv37Queue||inv37Queue.actor!==actor||inv37Queue.device!==device){const {Inventario37}=await import('./src/inventario37.js');inv37Queue=new Inventario37(c.db,actor,device,async req=>{if(authSession?.user?.id!==actor)throw Error('Sesión cambió');return sb.rpc('lc_inventario36',req);});}const old=localStorage.getItem('lc_inv36_'+actor);if(old){await inv37Queue.enqueue(null,null,JSON.parse(old));localStorage.removeItem('lc_inv36_'+actor);}inv37Rows=await inv37Queue.rows();return inv37Queue;}
@@ -1383,7 +1385,7 @@ function exportarPDF(){if(!window.jspdf){alert('La exportación PDF requiere con
 /* CONFIG, BACKUP, IMPORT */
 function abrirConfiguracion(){if(!exigirAdmin())return;$('cfgPedidoPrefijo').value=settings.pedidoPrefijo||'PED';$('cfgPedidoNumero').value=settings.pedidoNumero||1;$('configDlg').showModal()}
 async function guardarConfig(e){e.preventDefault();settings.pedidoPrefijo=$('cfgPedidoPrefijo').value.trim().toUpperCase()||'PED';settings.pedidoNumero=Math.max(1,+$('cfgPedidoNumero').value||1);await putStore('settings',settings);cerrarDlg('configDlg');toast('Configuración guardada')}
-async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.11.0',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,inventarioAportes,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
+async function hacerBackup(){await loadAll();const b={app:'LCexpress',version:'10.11.1',fecha:new Date().toISOString(),productos,clientes,pedidos,rutas,inventarios,inventarioDetalle,inventarioParticipantes,inventarioMovimientos,inventarioAportes,settings};download(`LCexpress_Backup_Completo_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(b,null,2),'application/json');toast('Backup completo creado')}
 async function restaurarBackup(e){const f=e.target.files[0];if(!f)return;try{const b=JSON.parse(await f.text());if(b.app!=='LCexpress')throw 0;if(!confirm('¿Restaurar este backup? Se reemplazarán inventario, clientes, pedidos, rutas y configuración actuales.'))return;await replaceStore('productos',b.productos||[]);await replaceStore('clientes',b.clientes||[]);await replaceStore('pedidos',b.pedidos||[]);await replaceStore('rutas',b.rutas||[]);if(b.inventarios)await replaceStore('inventarios',b.inventarios||[]);if(b.inventarioDetalle)await replaceStore('inventario_detalle',b.inventarioDetalle||[]);if(b.inventarioParticipantes)await replaceStore('inventario_participantes',b.inventarioParticipantes||[]);if(b.inventarioMovimientos)await replaceStore('inventario_movimientos',b.inventarioMovimientos||[]);if(b.inventarioAportes)await replaceStore('inventario_aportes',b.inventarioAportes||[]);await replaceStore('settings',[b.settings||{id:'config',pedidoPrefijo:'PED',pedidoNumero:1}]);await loadAll();llenarFiltros();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();toast('Backup restaurado')}catch{alert('El archivo no es un backup válido de LCexpress.')}finally{e.target.value=''}}
 async function importarExcel(e){
   if(!exigirAdmin()){e.target.value='';return}const f=e.target.files[0];if(!f||typeof XLSX==='undefined')return;
@@ -1399,204 +1401,11 @@ function abrirCentroMas(){$('moreCenterDlg').showModal()}
 function toggleMenu(){abrirCentroMas()}
 if(window.LCCloud)bootstrapAuth();else window.addEventListener('lcexpress-cloud-ready',bootstrapAuth,{once:true});
 </script>
-<!-- LCexpress v10.11.0: panel administrativo integrado, lectura/estructura; no habilita escrituras hasta instalar RPC seguras -->
-<button id="lcModulosBtn" type="button" data-admin-only class="hidden" onclick="lc11Abrir()">▦ Módulos v10.11</button>
-<dialog id="lcModulosDlg" aria-label="Módulos administrativos LCexpress">
-  <div class="lc11-head"><strong>LCexpress · Administración v10.11.0</strong><button class="lc11-close" onclick="document.getElementById('lcModulosDlg').close()">Cerrar</button></div>
-  <div class="lc11-tabs" id="lc11Tabs" role="tablist"></div>
-  <div class="lc11-content" id="lc11Contenido" role="tabpanel"></div>
-</dialog>
-<script>
-const LC11_SECCIONES=[
- ['costos','Costos y ganancias','Registrar costos iniciales, compras y consultar márgenes.'],
- ['puntos','Puntos y canjes','Acumulación, canje, promociones y movimientos por cliente.'],
- ['vehiculos','Vehículos','Registro de unidades, conductores y kilometraje.'],
- ['recorridos','Recorridos','Inicio, cierre y kilómetros recorridos por ruta.'],
- ['mantenimiento','Mantenimiento','Servicios, reparaciones y próximos vencimientos.'],
- ['gastos','Gastos','Combustible, viáticos, peajes y otros gastos.'],
- ['rentabilidad','Rentabilidad','Ingresos, costo de mercadería y gastos por ruta.']
-];
-function lc11Abrir(){
- if(typeof exigirAdmin!=='function'||!exigirAdmin())return;
- lc11Seleccionar('costos');document.getElementById('lcModulosDlg').showModal();
-}
-function lc11Seleccionar(id){
- if(typeof esAdmin!=='function'||!esAdmin()){document.getElementById('lcModulosDlg').close();return}
- const tabs=document.getElementById('lc11Tabs');tabs.replaceChildren();
- LC11_SECCIONES.forEach(([clave,titulo])=>{
-   const b=document.createElement('button');b.type='button';b.textContent=titulo;
-   b.setAttribute('role','tab');b.setAttribute('aria-selected',String(clave===id));
-   b.onclick=()=>lc11Seleccionar(clave);tabs.appendChild(b);
- });
- const seccion=LC11_SECCIONES.find(x=>x[0]===id);
- const cont=document.getElementById('lc11Contenido');cont.replaceChildren();
- const h=document.createElement('h2');h.textContent=seccion[1];cont.appendChild(h);
- const p=document.createElement('p');p.textContent=seccion[2];cont.appendChild(p);
-
- // Simulador de puntos: cálculo local, sin acreditar ni canjear saldos reales.
- if(id==='puntos'){
-   const panel=document.createElement('section');panel.className='lc11-calc';
-   const titulo=document.createElement('h3');titulo.textContent='Simulador de acumulación y canje';panel.appendChild(titulo);
-   const aviso=document.createElement('p');aviso.textContent='SIMULACIÓN: no consulta saldos de clientes, no genera movimientos y no modifica pedidos.';panel.appendChild(aviso);
-   const campos=[['compra','Compra elegible ($)','0'],['multiplicador','Promoción (1x, 2x o 3x)','1'],['saldo','Puntos disponibles','0'],['canje','Puntos que desea canjear','0']];
-   const controles={};
-   campos.forEach(([clave,etiqueta,valor])=>{
-     const fila=document.createElement('label');fila.style.display='block';fila.style.margin='8px 0';fila.textContent=etiqueta+' ';
-     const input=document.createElement('input');input.type='number';input.min='0';input.step=clave==='compra'?'0.01':'1';input.value=valor;
-     if(clave==='multiplicador'){input.min='1';input.max='3'}
-     fila.appendChild(input);panel.appendChild(fila);controles[clave]=input;
-   });
-   const resultado=document.createElement('p');resultado.setAttribute('aria-live','polite');panel.appendChild(resultado);
-   const calcular=document.createElement('button');calcular.type='button';calcular.textContent='Calcular simulación';
-   calcular.onclick=()=>{
-     const v=Object.fromEntries(Object.entries(controles).map(([k,el])=>[k,Number(el.value)]));
-     if(Object.values(controles).some(el=>el.value.trim()==='')||Object.values(v).some(x=>!Number.isFinite(x)||x<0)||![1,2,3].includes(v.multiplicador)||![v.saldo,v.canje].every(Number.isInteger)){
-       resultado.textContent='Revisa los valores: puntos enteros, promoción 1x, 2x o 3x e importes no negativos.';return;
-     }
-     const centavos=Math.round(v.compra*100);
-     if(Math.abs(v.compra*100-centavos)>0.000001||!Number.isSafeInteger(centavos)){
-       resultado.textContent='La compra debe tener como máximo dos decimales.';return;
-     }
-     if(v.canje>v.saldo){resultado.textContent='No hay puntos suficientes para el canje solicitado.';return}
-     const descuentoCentavos=v.canje;
-     if(descuentoCentavos>centavos){resultado.textContent='El canje supera el importe elegible de la compra.';return}
-     // Regla aprobada: los puntos nuevos se ganan sobre el total NETO después del canje.
-     // Se trabaja en centavos enteros para evitar errores de coma flotante.
-     const netoCentavos=centavos-descuentoCentavos;
-     const ganados=Math.floor(netoCentavos/100)*v.multiplicador;
-     const saldoFinal=v.saldo-v.canje+ganados;
-     resultado.textContent='Total pagado: $'+(netoCentavos/100).toFixed(2)+' · Puntos a ganar: '+ganados+' · Descuento simulado: $'+(descuentoCentavos/100).toFixed(2)+' · Saldo proyectado: '+saldoFinal+' puntos ($'+(saldoFinal/100).toFixed(2)+'). No se ha registrado ninguna operación.';
-   };
-   panel.appendChild(calcular);cont.appendChild(panel);
- }
-
- // Administración real de puntos: RPC autorizadas en PostgreSQL.
- // Se mantiene separada del cobro: NO acredita ni canjea puntos por pedidos.
- if(id==='puntos'){
-   const panel=document.createElement('section');panel.className='lc11-calc';
-   const titulo=document.createElement('h3');titulo.textContent='Saldo y ajuste administrativo (Supabase)';panel.appendChild(titulo);
-   const aviso=document.createElement('p');aviso.textContent='Requiere instalar previamente las tablas y funciones RPC de puntos. No funciona sin Internet. No aplica canjes en pedidos.';panel.appendChild(aviso);
-   const campos={};
-   [['cliente','ID del cliente'],['puntos','Ajuste de puntos (+ o -)'],['referencia','Referencia única de operación'],['motivo','Motivo del ajuste']].forEach(([clave,etiqueta])=>{
-     const fila=document.createElement('label');fila.style.display='block';fila.style.margin='8px 0';fila.textContent=etiqueta+' ';
-     const i=document.createElement('input');i.type=clave==='puntos'?'number':'text';
-     if(clave==='puntos')i.step='1';i.autocomplete='off';fila.appendChild(i);panel.appendChild(fila);campos[clave]=i;
-   });
-   // Selector asistido: usa clientes ya descargados por LCexpress; no expone datos adicionales.
-   const listaId='lc11-clientes-puntos';
-   const lista=document.createElement('datalist');lista.id=listaId;
-   const sugerencias=new Map();
-   (Array.isArray(clientes)?clientes:[]).filter(c=>c&&c.id).forEach(c=>{
-     const nombre=[c.nombre||'',c.apellido||''].join(' ').trim();
-     const comercio=c.comercio||'';
-     const etiqueta=[nombre,comercio,String(c.id)].filter(Boolean).join(' — ');
-     if(etiqueta){const opt=document.createElement('option');opt.value=etiqueta;lista.appendChild(opt);sugerencias.set(etiqueta,String(c.id));}
-   });
-   campos.cliente.setAttribute('list',listaId);
-   campos.cliente.placeholder='Buscar por nombre, comercio o pegar ID';
-   panel.appendChild(lista);
-   const estado=document.createElement('p');estado.setAttribute('role','status');estado.setAttribute('aria-live','polite');panel.appendChild(estado);
-   let ocupado=false;
-   const consulta=document.createElement('button');consulta.type='button';consulta.textContent='Consultar saldo';
-   const ajuste=document.createElement('button');ajuste.type='button';ajuste.textContent='Registrar ajuste';
-   const bloquear=(valor)=>{ocupado=valor;consulta.disabled=valor;ajuste.disabled=valor};
-   const clienteValido=()=>{const entrada=campos.cliente.value.trim(),v=sugerencias.get(entrada)||entrada;if(!v||v.length>180)throw Error('Selecciona un cliente o introduce su ID válido.');return v};
-   const conexion=()=>{if(!navigator.onLine)throw Error('Esta operación requiere conexión a Internet.');if(typeof esAdmin!=='function'||!esAdmin())throw Error('Solo administradores.');if(typeof sb==='undefined'||!sb)throw Error('Supabase no está disponible.');return sb};
-   consulta.onclick=async()=>{
-     if(ocupado)return;bloquear(true);estado.textContent='Consultando...';
-     try{const c=conexion(),cliente=clienteValido();const {data,error}=await c.rpc('lc_puntos_saldo_admin',{p_cliente_id:cliente});if(error)throw error;estado.textContent='Saldo actual: '+String(data)+' puntos.'}
-     catch(e){estado.textContent='No se pudo consultar: '+(e.message||String(e))}finally{bloquear(false)}
-   };
-   ajuste.onclick=async()=>{
-     if(ocupado)return;bloquear(true);
-     try{
-       const c=conexion(),cliente=clienteValido(),raw=campos.puntos.value.trim(),n=Number(raw),ref=campos.referencia.value.trim(),motivo=campos.motivo.value.trim();
-       if(!/^-?\d+$/.test(raw)||!Number.isSafeInteger(n)||n===0||Math.abs(n)>2147483647)throw Error('Los puntos deben ser un entero distinto de cero.');
-       if(!ref||ref.length>180||!motivo||motivo.length>500)throw Error('Indica una referencia única y un motivo (máximo 500 caracteres).');
-       if(!window.confirm('¿Confirmas el ajuste de '+n+' puntos al cliente '+cliente+'?'))return;
-       estado.textContent='Registrando ajuste...';
-       const {data,error}=await c.rpc('lc_puntos_ajuste_admin',{p_cliente_id:cliente,p_puntos:n,p_referencia_unica:ref,p_descripcion:motivo});
-       if(error)throw error;
-       estado.textContent=(data?.repetido?'Operación ya registrada. ':'Ajuste registrado. ')+'Saldo: '+String(data?.saldo)+' puntos.';
-     }catch(e){estado.textContent='No se pudo registrar: '+(e.message||String(e))}finally{bloquear(false)}
-   };
-   panel.appendChild(consulta);panel.appendChild(ajuste);cont.appendChild(panel);
- }
-
- // Calculadoras administrativas locales: no consultan ni escriben costos en Supabase.
- if(['costos','recorridos','rentabilidad'].includes(id)){
-   const bloque=document.createElement('section');bloque.className='lc11-calculadora';
-   const titulo=document.createElement('h3');titulo.textContent=id==='costos'?'Simulador de costo promedio':id==='recorridos'?'Calculadora de kilometraje':'Simulador de rentabilidad por ruta';bloque.appendChild(titulo);
-   const campos=id==='costos'?[['stock','Existencia actual (unidades)'],['costo','Costo unitario actual ($)'],['entrada','Unidades recibidas'],['nuevo','Costo unitario de compra ($)']]:id==='recorridos'?[['inicio','Odómetro inicial (km)'],['fin','Odómetro final (km)'],['combustible','Combustible consumido (litros)']]:[['ventas','Ventas netas ($)'],['mercaderia','Costo de mercadería ($)'],['gastos','Gastos operativos ($)']];
-   const inputs={};
-   campos.forEach(([key,label])=>{const fila=document.createElement('label');fila.style.display='block';fila.style.margin='8px 0';fila.textContent=label+' ';const input=document.createElement('input');input.type='number';input.min='0';input.step='any';input.placeholder='0';input.style.maxWidth='170px';input.setAttribute('aria-label',label);fila.appendChild(input);bloque.appendChild(fila);inputs[key]=input});
-   const resultado=document.createElement('p');resultado.setAttribute('role','status');resultado.style.fontWeight='bold';
-   const boton=document.createElement('button');boton.type='button';boton.textContent='Calcular';boton.onclick=()=>{
-     const valores={};for(const [k,input] of Object.entries(inputs)){const raw=input.value.trim();if(raw===''||!Number.isFinite(Number(raw))||Number(raw)<0){resultado.textContent='Complete todos los campos con números válidos mayores o iguales a cero.';return}valores[k]=Number(raw)}
-     const v=valores;
-     if(id==='costos'){const total=v.stock+v.entrada;resultado.textContent=total>0?'Costo promedio estimado: $'+((v.stock*v.costo+v.entrada*v.nuevo)/total).toFixed(4)+' por unidad. Existencia estimada: '+total:'No hay unidades para calcular un promedio.'}
-     else if(id==='recorridos'){if(v.fin<v.inicio){resultado.textContent='El odómetro final no puede ser inferior al inicial.';return}const km=v.fin-v.inicio;resultado.textContent='Distancia: '+km.toFixed(2)+' km'+(v.combustible>0&&km>0?' · Consumo: '+(v.combustible*100/km).toFixed(2)+' L/100 km':'')}
-     else {const bruta=v.ventas-v.mercaderia;const neta=bruta-v.gastos;resultado.textContent='Utilidad bruta: $'+bruta.toFixed(2)+' · Utilidad operativa: $'+neta.toFixed(2)+' · Margen operativo: '+(v.ventas>0?(neta/v.ventas*100).toFixed(2)+'%':'no calculable')}
-   };
-   bloque.appendChild(boton);bloque.appendChild(resultado);
-   const nota=document.createElement('p');nota.className='lc11-muted';nota.textContent='Simulación manual: no guarda información ni modifica inventario, pedidos o Supabase. No representa un costo confirmado.';bloque.appendChild(nota);cont.appendChild(bloque);
- }
- if(['vehiculos','recorridos','mantenimiento','gastos'].includes(id)) lc11FormularioBorrador(id,cont);
- const aviso=document.createElement('p');aviso.className='lc11-muted';aviso.textContent='Interfaz incorporada al proyecto. Operaciones bloqueadas hasta activar las funciones SQL, los permisos y la sincronización de v10.11.0.';cont.appendChild(aviso);
- const table=document.createElement('table');const head=document.createElement('tr');
- ['Función','Estado'].forEach(t=>{const th=document.createElement('th');th.textContent=t;head.appendChild(th)});table.appendChild(head);
- const tr=document.createElement('tr');const a=document.createElement('td');a.textContent=seccion[2];const b=document.createElement('td');b.textContent='Pendiente de conexión segura';tr.append(a,b);table.appendChild(tr);cont.appendChild(table);
-}
-</script>
-
-<script>
-/* LCexpress 10.11: formularios de preparación local, SIN escritura a Supabase ni PowerSync.
-   No son registros operativos: requieren futura RPC autenticada e idempotente. */
-const LC11_CAMPOS={
- vehiculos:[['placa','Placa','text'],['descripcion','Descripción','text'],['kilometraje','Odómetro actual (km)','number']],
- recorridos:[['vehiculo','Placa del vehículo','text'],['ruta','Ruta','text'],['fecha','Fecha','date'],['km_inicial','Odómetro inicial','number'],['km_final','Odómetro final','number']],
- mantenimiento:[['vehiculo','Placa del vehículo','text'],['fecha','Fecha de servicio','date'],['tipo','Servicio realizado','text'],['km','Odómetro del servicio','number'],['proximo_km','Próximo servicio (km)','number'],['importe','Costo ($)','number']],
- gastos:[['fecha','Fecha','date'],['categoria','Categoría de gasto','text'],['vehiculo','Placa (opcional)','text'],['ruta','Ruta (opcional)','text'],['importe','Importe ($)','number'],['concepto','Concepto','text']]
-};
-const LC11_DRAFT_KEY='lcexpress_v1011_borradores_locales_v1';
-function lc11LeerBorradores(){try{const x=JSON.parse(localStorage.getItem(LC11_DRAFT_KEY)||'{}');return x&&typeof x==='object'&&!Array.isArray(x)?x:{}}catch{return {}}}
-function lc11GuardarBorradores(data){try{localStorage.setItem(LC11_DRAFT_KEY,JSON.stringify(data));return true}catch{return false}}
-function lc11FormularioBorrador(tipo,contenedor){
- const bloque=document.createElement('section');bloque.className='lc11-calculadora';
- const titulo=document.createElement('h3');titulo.textContent='Formulario de preparación — '+tipo;bloque.appendChild(titulo);
- const aviso=document.createElement('p');aviso.className='lc11-muted';aviso.textContent='BORRADOR LOCAL en este navegador: NO registra operaciones, NO sincroniza y NO modifica Supabase. No usar como control oficial.';bloque.appendChild(aviso);
- const campos={};
- for(const [clave,etiqueta,tipoInput] of LC11_CAMPOS[tipo]){
-  const fila=document.createElement('label');fila.style.display='block';fila.style.margin='8px 0';fila.textContent=etiqueta+' ';
-  const input=document.createElement('input');input.type=tipoInput;input.setAttribute('aria-label',etiqueta);input.required=!['vehiculo','ruta'].includes(clave)||tipo==='vehiculos';
-  if(tipoInput==='number'){input.min='0';input.step='any'}
-  fila.appendChild(input);bloque.appendChild(fila);campos[clave]=input;
- }
- const estado=document.createElement('p');estado.setAttribute('role','status');bloque.appendChild(estado);
- const resumen=document.createElement('p');bloque.appendChild(resumen);
- function refrescar(){const n=(lc11LeerBorradores()[tipo]||[]).length;resumen.textContent='Borradores guardados en este navegador: '+n}
- const guardar=document.createElement('button');guardar.type='button';guardar.textContent='Guardar borrador local';guardar.onclick=()=>{
-  const item={};for(const [clave,etiqueta,tipoInput] of LC11_CAMPOS[tipo]){
-   const valor=campos[clave].value.trim();if(campos[clave].required&&!valor){estado.textContent='Falta completar: '+etiqueta;return}
-   if(tipoInput==='number'&&valor!==''&&(!Number.isFinite(Number(valor))||Number(valor)<0)){estado.textContent='Número inválido: '+etiqueta;return}
-   item[clave]=tipoInput==='number'&&valor!==''?Number(valor):valor;
-  }
-  if(tipo==='recorridos'&&item.km_final<item.km_inicial){estado.textContent='El odómetro final no puede ser inferior al inicial.';return}
-  if(tipo==='mantenimiento'&&item.proximo_km!==''&&item.proximo_km<item.km){estado.textContent='El próximo servicio no puede ser anterior al kilometraje del servicio.';return}
-  const datos=lc11LeerBorradores();datos[tipo]=datos[tipo]||[];datos[tipo].push({id:crypto.randomUUID(),...item,creado_en:new Date().toISOString()});
-  if(!lc11GuardarBorradores(datos)){estado.textContent='No se pudo guardar el borrador: almacenamiento local no disponible.';return}
-  estado.textContent='Borrador guardado únicamente en este navegador.';refrescar();
- };bloque.appendChild(guardar);
- const exportar=document.createElement('button');exportar.type='button';exportar.textContent='Exportar borradores JSON';exportar.style.marginLeft='8px';exportar.onclick=()=>{
-  const contenido=JSON.stringify({version:'10.11.0',tipo:'borradores_no_operativos',datos:lc11LeerBorradores()},null,2);
-  const url=URL.createObjectURL(new Blob([contenido],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='LCexpress_borradores_v10_11.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
- };bloque.appendChild(exportar);refrescar();contenedor.appendChild(bloque);
-}
-</script>
 <script type="module" src="./src/promociones28.js"></script>
 <script type="module" src="./src/costos29.js"></script>
 <script type="module" src="./src/compras30.js"></script>
 <script type="module" src="./src/finanzas31.js"></script>
-<button type="button" id="adminMenu32" data-admin-only class="hidden" style="position:fixed;bottom:12px;right:12px;z-index:20;border-radius:12px;padding:12px" onclick="if(esAdmin())window.LCAdmin32.abrir();else alert('Solo administración')">☰ Administración</button>
 <script type="module" src="./src/admin32.js"></script>
+<script>window.LC111Admin=()=>exigirAdmin();window.LC111Clientes=()=>clientes;window.LC111Productos=()=>productos;</script>
+<script type="module" src="./src/gestion111.js"></script>
 </body></html>

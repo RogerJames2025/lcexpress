@@ -1,4 +1,4 @@
-const el=(t,s='')=>{const n=document.createElement(t);n.textContent=s;return n};
+const el=(t,s='')=>{const n=document.createElement(t);if(t==='dialog')n.classList.add('lc111-styled');n.textContent=s;return n};
 const rpc=async(name,args)=>{if(!navigator.onLine||!window.LC_SUPABASE)throw Error('Conexión requerida');const {data,error}=await window.LC_SUPABASE.rpc(name,args);if(error)throw Error(error.message);return data};
 const tipos=['TOTAL','MES','PEDIDO','PRODUCTO','VENDEDOR','CLIENTE','RUTA','INVENTARIO','ROTACION','COMPRAS','PAGAR','BENEFICIOS'];
 const val=v=>v==null?'No disponible':typeof v==='object'?JSON.stringify(v):String(v);
