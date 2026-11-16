@@ -1,5 +1,5 @@
 /* LCexpress: correccion de arranque 10.11.2; no modifica almacenamiento de datos. */
-const CACHE = 'lcexpress-v10.11.2-produccion-1';
+const CACHE = 'lcexpress-v10.11.2-produccion-2';
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/lc-config.js', '/lc-dialog112.js'];
 const EXTERNAL = [
   'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
