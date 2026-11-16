@@ -18,6 +18,7 @@ const clientes = new Table({
 }, { indexes: { nombre: ['nombre'], telefono: ['telefono'], comercio: ['comercio'] } });
 
 const rutas = new Table({
+  actor112: column.text,
   codigo: column.text, nombre: column.text, estado: column.text,
   inicio: column.text, fin: column.text, actualizado: column.text, eliminado_en: column.text
 });
@@ -97,7 +98,15 @@ const lc_cola_local = new Table({ actor: column.text, pedido_id: column.text, so
 const lc_migracion_local = new Table({actor:column.text,pedido_id:column.text,contenido:column.text,estado:column.text,respuesta:column.text},{localOnly:true,indexes:{actor:['actor']}});
 const lc_archivo40 = new Table({actor:column.text,fecha:column.text,contenido:column.text,sha:column.text},{localOnly:true});
 const lc_inv_cola37 = new Table({actor:column.text,device:column.text,orden:column.integer,creado:column.text,solicitud:column.text,estado:column.text,respuesta:column.text,error:column.text},{localOnly:true,indexes:{actor:["actor","device"]}});
+const lc_ruta_catalogo112 = new Table({actor:column.text,datos:column.text,fecha:column.text},{localOnly:true,indexes:{actor:["actor"]}});
+const lc_ruta_cola112 = new Table({actor:column.text,ruta:column.text,orden:column.integer,creado:column.text,solicitud:column.text,estado:column.text,respuesta:column.text,error:column.text},{localOnly:true,indexes:{actor:["actor"],ruta:["ruta"]}});
+const lc_venta_admin_local112 = new Table({actor:column.text,creado:column.text,solicitud:column.text,estado:column.text,respuesta:column.text},{localOnly:true,indexes:{actor:["actor"]}});
+const lc_autorizacion_local112 = new Table({actor:column.text,ruta:column.text,creado:column.text,solicitud:column.text,estado:column.text,respuesta:column.text},{localOnly:true,indexes:{actor:["actor"],ruta:["ruta"]}});
 const AppSchema = new Schema({
+  lc_autorizacion_local112,
+  lc_venta_admin_local112,
+  lc_ruta_catalogo112,
+  lc_ruta_cola112,
   lc_archivo40,
   lc_inv_cola37,
   lc_migracion_local,
@@ -184,7 +193,7 @@ class LCConnector {
     const ops = [...tx.crud].sort((a,b)=>(priority[a.table]??70)-(priority[b.table]??70));
 
     try {
-      if (ops.some(op=>['pedidos','pedido_detalle','productos','inventario_movimientos','perfiles','inventarios','inventario_detalle','inventario_aportes','inventario_participantes'].includes(op.table))) throw new Error('Escritura protegida; cola conservada para revisión');
+      if (ops.some(op=>['rutas','pedidos','pedido_detalle','productos','inventario_movimientos','perfiles','inventarios','inventario_detalle','inventario_aportes','inventario_participantes'].includes(op.table))) throw new Error('Escritura protegida; cola conservada para revisión');
       for (const op of ops) {
         const table = sb.from(op.table);
         if (op.op === UpdateType.PUT) {
@@ -401,7 +410,7 @@ async function put(store, obj) {
   }
   if (store === 'perfiles') {const {error}=await supabaseClient().rpc('lc_perfil35',{p_id:obj.id,p_nombre:obj.nombre,p_apellido:obj.apellido,p_codigo:obj.vendedor_codigo||''});if(error)throw error;return;}
   if (store === 'clientes') return writeRecord('clientes', obj.id, clienteToDb(obj));
-  if (store === 'rutas') return writeRecord('rutas', obj.id, rutaToDb(obj));
+  if (store === 'rutas') throw Error('Utilice la operación de ruta autorizada');
   if (store === 'pedidos') return putPedido(obj);
   if (store === 'settings') return writeRecord('configuracion', 'principal', settingsToDb(obj));
   if (store === 'categorias_producto' || store === 'cajas' || store === 'maletas') {
@@ -415,7 +424,7 @@ async function put(store, obj) {
 
 async function del(store, id) {
   if(store==='productos'){const {error}=await supabaseClient().rpc('lc_producto_baja35',{p_id:id});if(error)throw error;return;}
-  if(['pedidos','perfiles','inventarios','inventario_detalle','inventario_movimientos','inventario_aportes','inventario_participantes'].includes(store))throw Error('Borrado protegido; utilice el procedimiento autorizado');
+  if(['rutas','pedidos','perfiles','inventarios','inventario_detalle','inventario_movimientos','inventario_aportes','inventario_participantes'].includes(store))throw Error('Borrado protegido; utilice el procedimiento autorizado');
   if (store === 'pedidos') {
     await db.writeTransaction(async tx => {
       await tx.execute('DELETE FROM pedido_detalle WHERE pedido_id = ?', [id]);
@@ -429,7 +438,7 @@ async function del(store, id) {
 }
 
 async function replace(store, list) {
-  if(['productos','pedidos','perfiles','inventarios','inventario_detalle','inventario_movimientos','inventario_aportes','inventario_participantes'].includes(store))throw Error('Restauración masiva protegida; no se modificaron registros de este catálogo');
+  if(['rutas','productos','pedidos','perfiles','inventarios','inventario_detalle','inventario_movimientos','inventario_aportes','inventario_participantes'].includes(store))throw Error('Restauración masiva protegida; no se modificaron registros de este catálogo');
   if (store === 'settings') {
     await put('settings', list[0] || {id:'config',pedidoPrefijo:'PED',pedidoNumero:1,clienteNumero:1,rutaNumero:1});
     return;
@@ -540,15 +549,15 @@ async function exportarPendiente35(){
 // Exporta la cola interna completa sin completar ninguna transacción.
 async function exportarIntegral38(){
  const {data,error}=await supabaseClient().auth.getSession();if(error)throw error;const actor=data?.session?.user?.id;if(!actor)throw Error('Sesión requerida');
- const out=await db.readTransaction(async tx=>({formato:'LCexpress-integral40',actor,base:'lcexpress-v10.sqlite',fecha:new Date().toISOString(),ps_crud:await tx.getAll('SELECT * FROM ps_crud ORDER BY id'),inventario:await tx.getAll('SELECT * FROM lc_inv_cola37 WHERE actor=? ORDER BY device,orden',[actor]),pedidos:await tx.getAll('SELECT * FROM lc_cola_local WHERE actor=?',[actor]),migracion:await tx.getAll('SELECT * FROM lc_migracion_local WHERE actor=?',[actor]),archivos:await tx.getAll('SELECT * FROM lc_archivo40 WHERE actor=?',[actor]),pendientes_raw:localStorage.getItem('lcexpress_offline_pending_v2'),pendientes_v40_raw:localStorage.getItem('lcexpress_offline_pending_v40')}));
+ const out=await db.readTransaction(async tx=>({formato:'LCexpress-integral40',actor,base:'lcexpress-v10.sqlite',fecha:new Date().toISOString(),ps_crud:await tx.getAll('SELECT * FROM ps_crud ORDER BY id'),inventario:await tx.getAll('SELECT * FROM lc_inv_cola37 WHERE actor=? ORDER BY device,orden',[actor]),ventasAdmin112:await tx.getAll('SELECT * FROM lc_venta_admin_local112 WHERE actor=?',[actor]),autorizaciones112:await tx.getAll('SELECT * FROM lc_autorizacion_local112 WHERE actor=?',[actor]),rutas112:await tx.getAll('SELECT * FROM lc_ruta_cola112 WHERE actor=? ORDER BY orden',[actor]),pedidos:await tx.getAll('SELECT * FROM lc_cola_local WHERE actor=?',[actor]),migracion:await tx.getAll('SELECT * FROM lc_migracion_local WHERE actor=?',[actor]),archivos:await tx.getAll('SELECT * FROM lc_archivo40 WHERE actor=?',[actor]),pendientes_raw:localStorage.getItem('lcexpress_offline_pending_v2'),pendientes_v40_raw:localStorage.getItem('lcexpress_offline_pending_v40')}));
  const url=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='LCexpress_integral_'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return out;
 }
 async function reconciliarMixta38(){
  const tx=await db.getNextCrudTransaction();if(!tx)throw Error('Sin transacciones pendientes');const ops=tx.crud.map(o=>({table:o.table,id:o.id,op:o.op,opData:o.opData??null}));
  const {data,error}=await supabaseClient().rpc('lc_reconciliar40',{p_ops:ops});if(error)throw error;if(!data?.ok)throw Error('Conservada: '+JSON.stringify(data));
- if(!confirm('Todos los campos enviados coinciden actualmente con el servidor. Esto no prueba el historial. ¿Completar esta transacción sin repetir escrituras?\n'+JSON.stringify(ops)))return;
+ if(!await window.LCDialog.confirm('Todos los campos enviados coinciden actualmente con el servidor. Esto no prueba el historial. ¿Completar esta transacción sin repetir escrituras?\n'+JSON.stringify(ops)))return;
  const head=await db.getNextCrudTransaction();if(!head||JSON.stringify(head.crud.map(o=>({table:o.table,id:o.id,op:o.op,opData:o.opData??null})))!==JSON.stringify(ops))throw Error('La cabecera cambió; vuelva a revisar');
- const check=await supabaseClient().rpc('lc_reconciliar40',{p_ops:ops});if(check.error||!check.data?.ok)throw Error('La coincidencia cambió; se conserva la transacción');await head.complete();alert('Transacción completada sin repetir escrituras');
+ const check=await supabaseClient().rpc('lc_reconciliar40',{p_ops:ops});if(check.error||!check.data?.ok)throw Error('La coincidencia cambió; se conserva la transacción');await head.complete();window.LCDialog.alert('Transacción completada sin repetir escrituras');
 }
 async function importarArchivo40(file){
  const {data,error}=await supabaseClient().auth.getSession();if(error)throw error;

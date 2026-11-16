@@ -27,7 +27,7 @@ export async function leerEvidencia41(file){
 }
 export async function importarEvidencia41(m,file){
  const {sha,cs,raw}=await leerEvidencia41(file);
- if(raw.actor&&raw.actor!==m.actor&&!confirm('El archivo pertenece a otra sesión. Verifique su procedencia; la recuperación se auditará con su cuenta administrativa.'))return 0;
+ if(raw.actor&&raw.actor!==m.actor&&!await window.LCDialog.confirm('El archivo pertenece a otra sesión. Verifique su procedencia; la recuperación se auditará con su cuenta administrativa.'))return 0;
  if(Array.isArray(raw.ps_crud)&&window.LCCloud?.importarArchivo40)await window.LCCloud.importarArchivo40(file);
  const prepared=[];
  for(const c of cs){c.sha=sha;const payload=JSON.stringify(c);const id=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(m.actor+'\n'+payload))),x=>x.toString(16).padStart(2,'0')).join('');prepared.push({c,payload,id});}
@@ -40,8 +40,8 @@ export async function recuperarPedido41(m,r){
  let req=JSON.parse(localStorage.getItem(key)||'null');
  if(!req){
   const {data,error}=await m.rpc('lc_auditar_recuperacion24',{p:c.pedido,items:c.items});if(error)throw Error(error.message);if(data?.estado!=='RECUPERABLE')throw Error('Auditoría requiere revisión manual: '+JSON.stringify(data));
-  const motivo=prompt('Revise evidencia, dinero recibido y movimientos. Confirme que las cantidades faltantes no se descontaron por otra referencia.\n'+JSON.stringify(data.diferencias)+'\nMotivo (mínimo 10 caracteres):');if(!motivo||motivo.trim().length<10)return;
-  if(!confirm('Recuperar el pedido histórico '+c.pedido.numero+' sin puntos nuevos. SHA-256: '+c.sha+'\nNo se puede deshacer automáticamente. ¿Autoriza?'))return;
+  const motivo=await window.LCDialog.prompt('Revise evidencia, dinero recibido y movimientos. Confirme que las cantidades faltantes no se descontaron por otra referencia.\n'+JSON.stringify(data.diferencias)+'\nMotivo (mínimo 10 caracteres):');if(!motivo||motivo.trim().length<10)return;
+  if(!await window.LCDialog.confirm('Recuperar el pedido histórico '+c.pedido.numero+' sin puntos nuevos. SHA-256: '+c.sha+'\nNo se puede deshacer automáticamente. ¿Autoriza?'))return;
   req={p_op:crypto.randomUUID(),p_pedido:c.pedido,p_items:c.items,p_auditoria:data,p_sha:c.sha,p_motivo:motivo,p_device:'recuperacion-administrativa'};
   localStorage.setItem(key,JSON.stringify(req));
  }
