@@ -14,8 +14,17 @@ export async function ventaPuedeEnviar(db,actor,id){
 export async function rutaLocalActiva(db,actor,oficial){
  const rows=await db.getAll('SELECT * FROM lc_ruta_cola112 WHERE actor=? ORDER BY orden',[actor]);
  let r=oficial;
- for(const row of rows){const a=JSON.parse(row.solicitud);if(a.p_accion==='ABRIR'&&row.estado!=='CONFIRMADO')r={id:row.ruta,nombre:a.p_datos.nombre,codigo:'PROVISIONAL',estado:'ABIERTA',actor112:actor,provisional:true};
-
- if(r?.id===row.ruta&&(a.p_accion==='CERRAR'||row.estado==='CONFLICTO'))r=null;}
+ for(const row of rows){
+  const a=JSON.parse(row.solicitud);
+  if(a.p_accion==='ABRIR'&&row.estado!=='CONFIRMADO'){
+   // Una apertura rechazada de este dispositivo no debe ocultar la ruta oficial
+   // ya abierta por el mismo usuario en otro dispositivo.
+   if(row.estado!=='CONFLICTO'&&!r){
+    r={id:row.ruta,nombre:a.p_datos.nombre,codigo:'PROVISIONAL',estado:'ABIERTA',actor112:actor,provisional:true};
+   }
+  }
+  // Solo las operaciones que pertenecen a la ruta seleccionada pueden bloquearla.
+  if(r?.id===row.ruta&&(a.p_accion==='CERRAR'||row.estado==='CONFLICTO'))r=null;
+ }
  return r;
 }
