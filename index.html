@@ -763,6 +763,18 @@ async function loadAll(opts={}){
   try{catalogos.cajas=await getAllStore('cajas');catalogCajas=catalogos.cajas.filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogos.cajas=[];catalogCajas=[]}
   try{catalogos.maletas=await getAllStore('maletas');catalogMaletas=catalogos.maletas.filter(x=>x.activo!==false&&x.activo!==0&&x.activo!=='0');}catch{catalogos.maletas=[];catalogMaletas=[]}
   activeRoute=rutas.find(r=>r.estado==='ABIERTA'&&r.actor112===authSession?.user?.id)||null;
+  // La ruta oficial puede existir antes de que PowerSync reciba su fila local.
+  // Consultarla no abre rutas ni modifica datos; conserva las restricciones de la cola local.
+  if(authSession?.user?.id&&navigator.onLine&&window.LC_SUPABASE){
+    try{
+      const {data,error}=await window.LC_SUPABASE.rpc('lc_ruta112_consultar');
+      if(error)throw error;
+      const oficial=data?.ruta;
+      if(oficial?.id&&oficial.actor112===authSession.user.id&&oficial.estado==='ABIERTA'){
+        activeRoute=oficial;
+      }
+    }catch(e){console.warn('No se pudo consultar ruta oficial; se conserva la vista local',e);}
+  }
   if(authSession?.user?.id&&window.LCRuta112){try{activeRoute=await window.LCRuta112.activa(authSession.user.id,activeRoute);}catch(e){activeRoute=null;console.warn('No se pudo verificar cola de ruta',e);}}
   snapshotStore('productos',productos);snapshotStore('clientes',clientes);snapshotStore('pedidos',pedidos);snapshotStore('rutas',rutas);
   snapshotStore('inventarios',inventarios);snapshotStore('inventario_detalle',inventarioDetalle);snapshotStore('inventario_participantes',inventarioParticipantes);snapshotStore('inventario_movimientos',inventarioMovimientos);snapshotStore('inventario_aportes',inventarioAportes);
