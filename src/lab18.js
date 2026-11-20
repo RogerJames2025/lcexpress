@@ -30,7 +30,7 @@ export class Queue {
   try{const {data,error}=await this.rpc('lc_pedido_versionado_prueba',args);if(error)throw Error(rpcErrorCompleto(error));if(['REVISION_DESACTUALIZADA','STOCK_INSUFICIENTE','SALDO_PUNTOS_INSUFICIENTE','PROMOCION_REVISAR','AUTORIZACION_COSTO_REQUERIDA','RUTA_HISTORICA_INMUTABLE','RUTA_AJENA','RUTA_NO_ACTIVA_O_AJENA','DATOS_RUTA_INVALIDOS','VENDEDOR_PEDIDO_INVALIDO'].includes(data?.codigo)){await this.update(r.id,'CONFLICTO',data);continue;}if(data?.ok!==true||data.operacion_id!==r.id||data.pedido_id!==r.pedido_id)throw Error('Confirmación inválida');await this.update(r.id,'CONFIRMADO',data);}catch(e){await this.update(r.id,'PENDIENTE',null,e.message);break;}
  }}
 }
-const INCIDENTE_JANDRES_BLOQUEADOS=new Set(["e35a8f43-2b65-408f-86bb-0448b5b2b2f3","b83f1649-6fb3-4a28-8c05-28cad5f3ab46"]);
+const INCIDENTE_JANDRES_BLOQUEADOS=new Set(["e35a8f43-2b65-408f-86bb-0448b5b2b2f3","6f63c771-a2f0-4f8f-a693-e9fbccb65da","b83f1649-6fb3-4a28-8c05-28cad5f3ab46"]);
 function rpcErrorCompleto(error){return [error?.message,error?.details,error?.hint,error?.code&&('SQLSTATE '+error.code)].filter(Boolean).join(' | ')||'Error de Supabase sin detalles';}
 const queues=new Map();
 async function queue(actor){if(!actor)throw Error('Sesión requerida');if(!window.LCCloud?.db)throw Error('SQLite no disponible');if(!queues.has(actor))queues.set(actor,new Queue(window.LCCloud.db,actor,async(name,args)=>{const sb=window.LC_SUPABASE;const {data}=await sb.auth.getSession();if(data?.session?.user?.id!==actor)throw Error('Sesión diferente: no se enviará el pedido');return sb.rpc(name,args);}));return queues.get(actor);}
