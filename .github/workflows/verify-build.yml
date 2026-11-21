@@ -5,10 +5,11 @@ on:
   push:
     branches: [fix/cola-ventas-jandres-20261120]
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,9 +17,9 @@ jobs:
           node-version: '22'
       - name: Instalar dependencias
         run: npm install --no-audit --no-fund
-      - name: Validar sintaxis de cola
+      - name: Verificar sintaxis
         run: node --check src/lab18.js
       - name: Compilar web
         run: npm run build
-      - name: Comprobar archivos compilados
+      - name: Verificar dist
         run: test -f dist/index.html
