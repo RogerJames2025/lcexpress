@@ -744,10 +744,50 @@ async function esperarSincronizacionInicial(maxMs=15000){
   }
   return false;
 }
+// Solo lectura: reconcilia ventas confirmadas que PowerSync aún no entrega.
+let conciliacionConfirmados112={at:0,ids:'',pedidos:[]};
+async function recuperarConfirmadosNoVisibles112(){
+ const actor=authSession?.user?.id;
+ if(!actor||!navigator.onLine||!window.LC_SUPABASE||!window.LCLab18?.queue)return [];
+ try{
+  const cola=await window.LCLab18.queue(actor);
+  const confirmados=(await cola.rows()).filter(r=>r.estado==='CONFIRMADO'&&r.pedido_id&&r.respuesta);
+  const faltantes=[...new Set(confirmados.filter(r=>!pedidos.some(p=>p.id===r.pedido_id)).map(r=>r.pedido_id))].slice(0,40);
+  if(!faltantes.length){conciliacionConfirmados112={at:0,ids:'',pedidos:[]};return [];}
+  const clave=faltantes.slice().sort().join(',');
+  if(conciliacionConfirmados112.ids===clave&&Date.now()-conciliacionConfirmados112.at<15000)return conciliacionConfirmados112.pedidos;
+  const sb=window.LC_SUPABASE;
+  const {data:headers,error:he}=await sb.from('pedidos').select('*').in('id',faltantes);
+  if(he)throw he;
+  if(!headers?.length)return [];
+  const {data:detalles,error:de}=await sb.from('pedido_detalle').select('*').in('pedido_id',headers.map(r=>r.id));
+  if(de)throw de;
+  const byId=new Map();
+  for(const d of detalles||[]){
+   if(!byId.has(d.pedido_id))byId.set(d.pedido_id,[]);
+   byId.get(d.pedido_id).push({detalleId:d.id,productoId:d.producto_id,codigo:d.codigo||'',descripcion:d.descripcion||'',cantidad:Number(d.cantidad||0),precio:Number(d.precio||0),precioDecimales:Number(d.precio_decimales||2)===4?4:2,subtotal:Number(d.subtotal||0),vendedorId:d.vendedor_id||'',vendedorNombre:d.vendedor_nombre||''});
+  }
+  const recuperados=headers.map(r=>({
+   id:r.id,numero:r.numero,fecha:r.fecha,clienteId:r.cliente_id,clienteNombre:r.cliente_nombre||'',clienteComercio:r.cliente_comercio||'',
+   clienteTelefono:r.cliente_telefono||'',clienteTelefono2:r.cliente_telefono2||'',clienteCorreo:r.cliente_correo||'',clienteDireccion:r.cliente_direccion||'',
+   departamento:r.departamento||'',municipio:r.municipio||'',distrito:r.distrito||'',clienteRuta:r.cliente_ruta||'',
+   rutaId:r.ruta_id,rutaNombre:r.ruta_nombre||'',comprobante:r.comprobante||'RECIBO',total:Number(r.total||0),itemsTotal:Number(r.items_total||0),
+   modificado:!!r.modificado,modificaciones:Array.isArray(r.modificaciones)?r.modificaciones:[],formaPago:r.forma_pago||'EFECTIVO',
+   pagoEfectivo:Number(r.pago_efectivo||0),pagoTarjeta:Number(r.pago_tarjeta||0),pagoTransferencia:Number(r.pago_transferencia||0),
+   efectivoRecibido:Number(r.efectivo_recibido||0),cambio:Number(r.cambio||0),puntosCanjeados:Number(r.puntos_canjeados||0),
+   estado:r.estado||'ACTIVO',motivoAnulacion:r.motivo_anulacion||'',anuladoEn:r.anulado_en||null,anuladoPorId:r.anulado_por_id||null,
+   anuladoPorNombre:r.anulado_por_nombre||'',anuladoAutorizadoPorId:r.anulado_autorizado_por_id||null,
+   anuladoAutorizadoPorNombre:r.anulado_autorizado_por_nombre||'',actualizado:r.actualizado,items:byId.get(r.id)||[],__servidorSoloLectura:true
+  }));
+  conciliacionConfirmados112={at:Date.now(),ids:clave,pedidos:recuperados};
+  return recuperados;
+ }catch(e){console.warn('Conciliación de confirmados no disponible',e);return [];}
+}
 async function loadAll(opts={}){
   productos=await getAllStore('productos');
   clientes=await getAllStore('clientes');
   pedidos=await getAllStore('pedidos');
+  for(const oficial of await recuperarConfirmadosNoVisibles112()){if(!pedidos.some(p=>p.id===oficial.id))pedidos.push(oficial);}
   rutas=await getAllStore('rutas');
   try{inventarios=await getAllStore('inventarios')}catch{inventarios=[]}
   try{inventarioDetalle=await getAllStore('inventario_detalle')}catch{inventarioDetalle=[]}
@@ -1237,7 +1277,7 @@ async function guardarPedidoFinal(pago){
   return o
 }
 function abrirHistorialPedidos(){renderHistorialPedidos();void window.LCLab18?.show(currentProfile?.id||authSession?.user?.id);$('ordersHistoryDlg').showModal()}
-function renderHistorialPedidos(){const q=norm($('orderHistorySearch').value),list=pedidos.filter(o=>!q||[o.numero,o.clienteCodigo,clientes.find(c=>c.id===o.clienteId)?.codigo,o.clienteNombre,o.clienteComercio,o.rutaNombre,o.estado,o.motivoAnulacion,o.comprobante,abreviaturaComprobante(o.comprobante)].some(x=>norm(x).includes(q))).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));$('orderHistoryRows').innerHTML=list.length?list.map(o=>{const anul=pedidoAnulado(o);const estado=anul?'<span class="tag red">ANULADO</span>':(o.modificado?'<span class="tag purple">MODIFICADO</span>':'<span class="tag green">ORIGINAL</span>');return `<tr${anul?' style="opacity:.72"':''}><td><b>${esc(o.numero)}</b>${anul?'<br><small style="color:#991b1b">Documento anulado</small>':''}</td><td>${badgeComprobante(o.comprobante)}</td><td>${dateText(o.fecha)}</td><td>${esc(o.clienteNombre)}</td><td>${esc(o.clienteComercio)}</td><td>${esc(o.rutaNombre)}</td><td>${o.itemsTotal}</td><td>${anul?`<s>${moneyPedido(o.total,o.items||[])}</s><br><b>$0.00 válido</b>`:moneyPedido(o.total,o.items||[])}</td><td>${estado}</td><td><button class="rowbtn" title="Ver" onclick="verPedido('${o.id}')">👁️</button>${!anul?`<button class="rowbtn" title="Editar" onclick="editarPedido('${o.id}')">✏️</button><button class="rowbtn" title="Anular" onclick="solicitarAnulacionPedido('${o.id}')">⛔</button>`:''}<button class="rowbtn" title="Compartir" onclick="compartirPedidoPorId('${o.id}')">📤</button><button class="rowbtn" title="Descargar PDF" onclick="descargarPedido('${o.id}')">⬇️</button></td></tr>`}).join(''):`<tr><td colspan="10" class="empty">No hay pedidos.</td></tr>`}
+function renderHistorialPedidos(){const q=norm($('orderHistorySearch').value),list=pedidos.filter(o=>!q||[o.numero,o.clienteCodigo,clientes.find(c=>c.id===o.clienteId)?.codigo,o.clienteNombre,o.clienteComercio,o.rutaNombre,o.estado,o.motivoAnulacion,o.comprobante,abreviaturaComprobante(o.comprobante)].some(x=>norm(x).includes(q))).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));$('orderHistoryRows').innerHTML=list.length?list.map(o=>{const anul=pedidoAnulado(o);const estado=anul?'<span class="tag red">ANULADO</span>':(o.modificado?'<span class="tag purple">MODIFICADO</span>':'<span class="tag green">ORIGINAL</span>');return `<tr${anul?' style="opacity:.72"':''}><td><b>${esc(o.numero)}</b>${o.__servidorSoloLectura?'<br><small style="color:#0f766e">✓ Confirmado en servidor · pendiente PowerSync</small>':''}${anul?'<br><small style="color:#991b1b">Documento anulado</small>':''}</td><td>${badgeComprobante(o.comprobante)}</td><td>${dateText(o.fecha)}</td><td>${esc(o.clienteNombre)}</td><td>${esc(o.clienteComercio)}</td><td>${esc(o.rutaNombre)}</td><td>${o.itemsTotal}</td><td>${anul?`<s>${moneyPedido(o.total,o.items||[])}</s><br><b>$0.00 válido</b>`:moneyPedido(o.total,o.items||[])}</td><td>${estado}</td><td><button class="rowbtn" title="Ver" onclick="verPedido('${o.id}')">👁️</button>${!anul?`<button class="rowbtn" title="Editar" onclick="editarPedido('${o.id}')">✏️</button><button class="rowbtn" title="Anular" onclick="solicitarAnulacionPedido('${o.id}')">⛔</button>`:''}<button class="rowbtn" title="Compartir" onclick="compartirPedidoPorId('${o.id}')">📤</button><button class="rowbtn" title="Descargar PDF" onclick="descargarPedido('${o.id}')">⬇️</button></td></tr>`}).join(''):`<tr><td colspan="10" class="empty">No hay pedidos.</td></tr>`}
 function historialSeguro(v){if(v==null)return [];for(let n=0;n<4&&typeof v==='string';n++){try{v=JSON.parse(v)}catch{return [v]}}return Array.isArray(v)?v:[v]}
 function arrayPedidoSeguro(v){if(Array.isArray(v))return v;if(typeof v==='string'){try{const x=JSON.parse(v);return Array.isArray(x)?x:[]}catch(e){return []}}return []}
 function modificacionesPedidoSeguro(v){return historialSeguro(v)}
