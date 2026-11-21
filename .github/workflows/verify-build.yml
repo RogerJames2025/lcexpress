@@ -1,0 +1,24 @@
+name: Verificar compilacion LCexpress
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/cola-ventas-jandres-20261120]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Validar sintaxis de cola
+        run: node --check src/lab18.js
+      - name: Compilar web
+        run: npm run build
+      - name: Comprobar archivos compilados
+        run: test -f dist/index.html
