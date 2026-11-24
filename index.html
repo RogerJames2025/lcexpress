@@ -1005,12 +1005,36 @@ async function guardarProducto(e){
  }
  const p={id,codigo:codigoLimpio,descripcion:$('descripcion').value.trim().toUpperCase(),categoria:cat.categoria,cantidad,precio:parsePrecio4(precioTexto),precioDecimales:detectarDecimalesPrecio(precioTexto),caja:cat.caja,maleta:cat.maleta,cantidadMaleta,notas:$('notas').value.trim(),actualizado:new Date().toISOString()};
  btn.disabled=true;btn.textContent='Guardando…';
+ let altaConfirmada=false,stockConfirmado=false;
  try{
   const eraNuevo=!original;
-  await putStore('productos',p);
-  if(eraNuevo&&p.cantidad>0)await registrarMovimientoInventario({producto:p,tipo:'ALTA_PRODUCTO_INICIAL',cantidad:p.cantidad,motivo:'Existencia inicial al crear producto'});
-  productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');toast('Producto guardado');
- }catch(err){console.error('Error al guardar producto',err);errorProducto('No se pudo completar el guardado: '+(err?.message||String(err))+'. Revise el estado de sincronización antes de volver a intentarlo.');}
+  if(eraNuevo){
+   // El RPC lc_producto_alta35 exige existencia inicial cero. Nunca escribir stock por metadatos.
+   await putStore('productos',{...p,cantidad:0,cantidadMaleta:0});
+   altaConfirmada=true;
+   if(cantidad>0){
+    await inv36('AJUSTAR',{motivo:'Existencia inicial al crear producto',items:[{producto_id:id,cantidad,modo:'fijar',esperado:0}]});
+    stockConfirmado=true;
+   }
+   if(cantidadMaleta>0){
+    // Metadatos de maleta después de confirmar el ajuste oficial.
+    await putStore('productos',{...p,cantidad:0,cantidadMaleta});
+   }
+  }else{
+   // La edición de metadatos no puede alterar existencias.
+   if(cantidad!==Number(original.cantidad))throw Error('Para modificar la cantidad utilice Ajustar cantidad.');
+   await putStore('productos',p);
+  }
+  productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');
+  toast(eraNuevo?'Producto creado; inventario inicial '+(cantidad>0?'registrado':'en cero'):'Producto actualizado');
+ }catch(err){
+  console.error('Error al guardar producto',err);
+  if(altaConfirmada){
+   errorProducto('El producto ya fue creado en Supabase. '+(cantidad>0?(stockConfirmado?'La existencia inicial fue confirmada; ':'La existencia inicial aún no está confirmada; '):'')+'No vuelva a pulsar Guardar para crear otro producto. Revise la operación de inventario en Gestión. Detalle: '+(err?.message||String(err)));
+  }else{
+   errorProducto('No se pudo guardar el producto: '+(err?.message||String(err)));
+  }
+ }
  finally{btn.disabled=false;btn.textContent='Guardar';}
 }
 function seleccionarYEliminar(id){if(!exigirAdmin())return;seleccionadoId=id;renderProductos();borrarProducto(id)}
