@@ -106,13 +106,13 @@ dialog{border:0;border-radius:18px;max-width:760px;width:calc(100% - 20px);paddi
 </main>
 
 <!-- PRODUCTOS -->
-<dialog id="productDlg"><form onsubmit="guardarProducto(event)"><div class="modalhead"><b id="dlgTitle">Producto</b><button type="button" class="btn" onclick="cerrarDlg('productDlg')">×</button></div><div class="modalbody"><input type="hidden" id="pid"><div class="grid">
+<dialog id="productDlg"><form novalidate onsubmit="guardarProducto(event)"><div class="modalhead"><b id="dlgTitle">Producto</b><button type="button" class="btn" onclick="cerrarDlg('productDlg')">×</button></div><div class="modalbody"><input type="hidden" id="pid"><div class="grid">
 <div class="field"><label>Código</label><input id="codigo"></div><div class="field"><label>Categoría</label><input id="categoria" list="categoriasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="categoriasProducto"></datalist></div>
 <div class="field full"><label>Descripción *</label><input id="descripcion" required></div>
 <div class="field"><label>Cantidad total *</label><input id="cantidad" type="number" min="0" step="1" required></div><div class="field"><label>Precio de referencia</label><input id="precio" type="text" inputmode="decimal" pattern="[0-9,.]*" autocomplete="off" placeholder="0.00 / 0.0000" onfocus="this.select()"></div>
-<div class="field"><label>Caja</label><input id="caja" list="cajasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="cajasProducto"></datalist></div><div class="field"><label>Maleta</label><input id="maleta" list="maletasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="maletasProducto"></datalist></div>
+<div class="field"><label>Caja *</label><input id="caja" list="cajasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="cajasProducto"></datalist></div><div class="field"><label>Maleta</label><input id="maleta" list="maletasProducto" autocomplete="off" placeholder="Escriba para buscar y seleccione una existente…"><datalist id="maletasProducto"></datalist></div>
 <div class="field"><label>Cantidad en la maleta</label><input id="cantidadMaleta" type="number" min="0" step="1"></div><div class="field"><label>Notas</label><input id="notas"></div>
-</div><div class="modalfoot"><button type="button" class="btn" onclick="cerrarDlg('productDlg')">Cancelar</button><button class="btn primary">Guardar</button></div></div></form></dialog>
+</div><p id="productSaveError" role="alert" aria-live="polite" style="display:none;margin:12px 18px 0;padding:12px;border:1px solid #fca5a5;border-radius:10px;background:#fef2f2;color:#991b1b;font-weight:600"></p><div class="modalfoot"><button type="button" class="btn" onclick="cerrarDlg('productDlg')">Cancelar</button><button id="productSaveBtn" type="submit" class="btn primary">Guardar</button></div></div></form></dialog>
 
 <dialog id="adjustDlg"><form onsubmit="guardarAjuste(event)"><div class="modalhead"><b>Ajustar cantidad</b><button type="button" class="btn" onclick="cerrarDlg('adjustDlg')">×</button></div><div class="modalbody"><div class="grid">
 <div class="field full"><label>Producto seleccionado</label><input id="ajProductoNombre" readonly><input id="ajProducto" type="hidden"></div>
@@ -971,16 +971,71 @@ async function toggleCatalogoItem(id){if(!exigirAdmin())return;const tipo=$('cat
 async function eliminarCatalogoItem(id){if(!exigirAdmin())return;const tipo=$('catalogType').value,x=(catalogos[tipo]||[]).find(v=>v.id===id);if(!x)return;const uso=catalogoUso(tipo,x.nombre);if(uso){if(await window.LCDialog.confirm(`${x.nombre} está usado por ${uso} producto(s).\n\nNo se eliminará para conservar el historial. ¿Desea desactivarlo?`)){x.activo=false;x.actualizado=new Date().toISOString();await putStore(tipo,x);await recargarCatalogos();renderCatalogo()}return}if(!await window.LCDialog.confirm(`¿Eliminar ${x.nombre}?`))return;await delStore(tipo,id);await recargarCatalogos();renderCatalogo();toast('Registro eliminado')}
 async function fusionarCatalogoItem(){if(!exigirAdmin())return;const tipo=$('catalogType').value,id=$('catalogId').value;if(!id){window.LCDialog.alert('Seleccione primero el valor que desea fusionar.');return}const origen=(catalogos[tipo]||[]).find(x=>x.id===id);if(!origen)return;const candidatos=(catalogos[tipo]||[]).filter(x=>x.id!==id&&(x.activo===true||x.activo===1));if(!candidatos.length){window.LCDialog.alert('No hay otro valor activo para fusionar.');return}const lista=candidatos.map((x,i)=>`${i+1}. ${x.nombre}`).join('\n');const r=await window.LCDialog.prompt(`Fusionar "${origen.nombre}" con:\n\n${lista}\n\nEscriba el número del destino:`);if(!r)return;const dest=candidatos[Number(r)-1];if(!dest){window.LCDialog.alert('Selección inválida.');return}if(!await window.LCDialog.confirm(`Los productos con ${origen.nombre} pasarán a ${dest.nombre}. ¿Continuar?`))return;await propagarNombreCatalogo(tipo,origen.nombre,dest.nombre);origen.activo=false;origen.actualizado=new Date().toISOString();await putStore(tipo,origen);await recargarCatalogos();nuevoCatalogoItem();renderCatalogo();toast('Catálogo fusionado')}
 
-function nuevoProducto(){if(!exigirAdmin())return;['pid','codigo','categoria','descripcion','cantidad','precio','caja','maleta','cantidadMaleta','notas'].forEach(x=>$(x).value='');$('categoria').value='GENERAL';$('cantidad').value=0;$('precio').value='0.00';actualizarCatalogosProducto();$('dlgTitle').textContent='Nuevo producto';$('productDlg').showModal()}
+function nuevoProducto(){if(!exigirAdmin())return;ocultarErrorProducto();['pid','codigo','categoria','descripcion','cantidad','precio','caja','maleta','cantidadMaleta','notas'].forEach(x=>$(x).value='');$('categoria').value='GENERAL';$('cantidad').value=0;$('precio').value='0.00';actualizarCatalogosProducto();$('dlgTitle').textContent='Nuevo producto';$('productDlg').showModal()}
 function editarSeleccionado(){if(!exigirAdmin())return;const p=exigirSeleccion('editarlo');if(p)editarProducto(p.id)}
 function seleccionarYEditar(id){if(!exigirAdmin())return;seleccionadoId=id;renderProductos();editarProducto(id)}
-function editarProducto(id){const p=productos.find(x=>x.id===id);if(!p)return;['codigo','categoria','descripcion','cantidad','caja','maleta','cantidadMaleta','notas'].forEach(k=>$(k).value=p[k]??'');$('precio').value=formatoPrecio(p.precio,decimalesPrecio(p),false);$('pid').value=p.id;actualizarCatalogosProducto();$('dlgTitle').textContent='Modificar producto';$('productDlg').showModal()}
+function editarProducto(id){const p=productos.find(x=>x.id===id);if(!p)return;ocultarErrorProducto();['codigo','categoria','descripcion','cantidad','caja','maleta','cantidadMaleta','notas'].forEach(k=>$(k).value=p[k]??'');$('precio').value=formatoPrecio(p.precio,decimalesPrecio(p),false);$('pid').value=p.id;actualizarCatalogosProducto();$('dlgTitle').textContent='Modificar producto';$('productDlg').showModal()}
+function ocultarErrorProducto(){
+ const aviso=$('productSaveError');if(aviso){aviso.style.display='none';aviso.textContent='';}
+ const btn=$('productSaveBtn');if(btn){btn.disabled=false;btn.textContent='Guardar';}
+}
+function errorProducto(mensaje,campo){
+ const aviso=$('productSaveError');if(aviso){aviso.textContent=mensaje;aviso.style.display='block';}
+ if(campo){const input=$(campo);if(input){input.setAttribute('aria-invalid','true');input.focus();}}
+}
 async function guardarProducto(e){
-  e.preventDefault();const cat=validarCatalogosProducto();if(!cat)return;
-  const id=$('pid').value||idgen('p'),original=productos.find(x=>x.id===id)||null,codigoLimpio=limpiarCodigoProducto($('codigo').value);
-  if(codigoLimpio){const dup=productos.find(x=>x.id!==id&&codigoComparable(x.codigo)===codigoComparable(codigoLimpio));if(dup){window.LCDialog.alert(`El código ${codigoLimpio} ya está asignado a otro producto:\n\n${dup.descripcion}\n\nLCexpress no permitirá guardar otro producto con el mismo código.`);return}}
-  const p={id,codigo:codigoLimpio,descripcion:$('descripcion').value.trim().toUpperCase(),categoria:cat.categoria,cantidad:+$('cantidad').value||0,precio:parsePrecio4($('precio').value),precioDecimales:detectarDecimalesPrecio($('precio').value),caja:cat.caja,maleta:cat.maleta,cantidadMaleta:+$('cantidadMaleta').value||0,notas:$('notas').value.trim(),actualizado:new Date().toISOString()};
-  const eraNuevo=!original;await putStore('productos',p);if(eraNuevo&&p.cantidad>0)await registrarMovimientoInventario({producto:p,tipo:'ALTA_PRODUCTO_INICIAL',cantidad:p.cantidad,motivo:'Existencia inicial al crear producto'});productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');toast('Producto guardado')
+ e.preventDefault();
+ const btn=$('productSaveBtn');
+ if(btn?.disabled)return;
+ const aviso=$('productSaveError');if(aviso){aviso.style.display='none';aviso.textContent='';}
+ for(const campo of ['codigo','categoria','descripcion','cantidad','precio','caja','maleta','cantidadMaleta'])$(campo).removeAttribute('aria-invalid');
+ if(!$('descripcion').value.trim()){errorProducto('Escriba la descripción del producto.','descripcion');return;}
+ const cantidadTexto=$('cantidad').value.trim(),cantidad=Number(cantidadTexto);
+ if(!cantidadTexto||!Number.isSafeInteger(cantidad)||cantidad<0){errorProducto('La cantidad total debe ser un número entero igual o mayor que cero.','cantidad');return;}
+ const precioTexto=$('precio').value.trim(),precio=Number(precioTexto.replace(/,/g,''));
+ if(precioTexto&&(!/^[0-9]+(?:\.[0-9]{1,4})?$/.test(precioTexto.replace(/,/g,''))||!Number.isFinite(precio)||precio<0)){errorProducto('Ingrese un precio válido, por ejemplo 7.00.','precio');return;}
+ const cantidadMaletaTexto=$('cantidadMaleta').value.trim(),cantidadMaleta=Number(cantidadMaletaTexto||0);
+ if(!Number.isSafeInteger(cantidadMaleta)||cantidadMaleta<0){errorProducto('La cantidad en la maleta debe ser un entero igual o mayor que cero.','cantidadMaleta');return;}
+ if(cantidadMaleta>cantidad){errorProducto('La cantidad en la maleta no puede superar la cantidad total.','cantidadMaleta');return;}
+ const cat=validarCatalogosProducto();if(!cat){errorProducto('Seleccione una categoría y una caja existentes. La maleta es opcional.');return;}
+ const id=$('pid').value||idgen('p'),original=productos.find(x=>x.id===id)||null,codigoLimpio=limpiarCodigoProducto($('codigo').value);
+ if(codigoLimpio){
+  const dup=productos.find(x=>x.id!==id&&codigoComparable(x.codigo)===codigoComparable(codigoLimpio));
+  if(dup){errorProducto('El código '+codigoLimpio+' ya pertenece al producto '+dup.descripcion+'.','codigo');return;}
+ }
+ const p={id,codigo:codigoLimpio,descripcion:$('descripcion').value.trim().toUpperCase(),categoria:cat.categoria,cantidad,precio:parsePrecio4(precioTexto),precioDecimales:detectarDecimalesPrecio(precioTexto),caja:cat.caja,maleta:cat.maleta,cantidadMaleta,notas:$('notas').value.trim(),actualizado:new Date().toISOString()};
+ btn.disabled=true;btn.textContent='Guardando…';
+ let altaConfirmada=false,stockConfirmado=false;
+ try{
+  const eraNuevo=!original;
+  if(eraNuevo){
+   // El RPC lc_producto_alta35 exige existencia inicial cero. Nunca escribir stock por metadatos.
+   await putStore('productos',{...p,cantidad:0,cantidadMaleta:0});
+   altaConfirmada=true;
+   if(cantidad>0){
+    await inv36('AJUSTAR',{motivo:'Existencia inicial al crear producto',items:[{producto_id:id,cantidad,modo:'fijar',esperado:0}]});
+    stockConfirmado=true;
+   }
+   if(cantidadMaleta>0){
+    // Metadatos de maleta después de confirmar el ajuste oficial.
+    const {error:metaError}=await window.LC_SUPABASE.rpc('lc_producto_metadata34',{p_id:id,p_datos:{codigo:p.codigo,descripcion:p.descripcion,categoria:p.categoria,precio:p.precio,precio_decimales:p.precioDecimales,caja:p.caja,maleta:p.maleta,cantidad_maleta:cantidadMaleta,notas:p.notas}});if(metaError)throw metaError;
+   }
+  }else{
+   // La edición de metadatos no puede alterar existencias.
+   if(cantidad!==Number(original.cantidad))throw Error('Para modificar la cantidad utilice Ajustar cantidad.');
+   await putStore('productos',p);
+  }
+  productos=await getAllStore('productos');seleccionadoId=id;llenarFiltros();actualizarCatalogosProducto();renderProductos();cerrarDlg('productDlg');
+  toast(eraNuevo?'Producto creado; inventario inicial '+(cantidad>0?'registrado':'en cero'):'Producto actualizado');
+ }catch(err){
+  console.error('Error al guardar producto',err);
+  if(altaConfirmada){
+   errorProducto('El producto ya fue creado en Supabase. '+(cantidad>0?(stockConfirmado?'La existencia inicial fue confirmada; ':'La existencia inicial aún no está confirmada; '):'')+'No vuelva a pulsar Guardar para crear otro producto. Revise la operación de inventario en Gestión. Detalle: '+(err?.message||String(err)));
+  }else{
+   errorProducto('No se pudo guardar el producto: '+(err?.message||String(err)));
+  }
+ }
+ finally{btn.disabled=false;btn.textContent='Guardar';}
 }
 function seleccionarYEliminar(id){if(!exigirAdmin())return;seleccionadoId=id;renderProductos();borrarProducto(id)}
 async function borrarProducto(id){const p=productos.find(x=>x.id===id);if(!p)return;if(!await window.LCDialog.confirm(`¿Desactivar este producto?\n\n${p.descripcion}\nCódigo: ${p.codigo||'S/C'}\nCantidad: ${+p.cantidad||0}\n\nEl producto dejará de aparecer para nuevas operaciones, pero conservará todos sus pedidos, movimientos e inventarios históricos.`))return;await delStore('productos',p.id);productos=await getAllStore('productos');seleccionadoId=null;llenarFiltros();renderProductos();toast('Producto desactivado; historial conservado')}
