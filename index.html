@@ -993,7 +993,7 @@ async function guardarProducto(e){
  const cantidadTexto=$('cantidad').value.trim(),cantidad=Number(cantidadTexto);
  if(!cantidadTexto||!Number.isSafeInteger(cantidad)||cantidad<0){errorProducto('La cantidad total debe ser un número entero igual o mayor que cero.','cantidad');return;}
  const precioTexto=$('precio').value.trim(),precio=Number(precioTexto.replace(/,/g,''));
- if(precioTexto&&(!/^[0-9]+(?:\\.[0-9]{1,4})?$/.test(precioTexto.replace(/,/g,''))||!Number.isFinite(precio)||precio<0)){errorProducto('Ingrese un precio válido, por ejemplo 7.00.','precio');return;}
+ if(precioTexto&&(!/^[0-9]+(?:\.[0-9]{1,4})?$/.test(precioTexto.replace(/,/g,''))||!Number.isFinite(precio)||precio<0)){errorProducto('Ingrese un precio válido, por ejemplo 7.00.','precio');return;}
  const cantidadMaletaTexto=$('cantidadMaleta').value.trim(),cantidadMaleta=Number(cantidadMaletaTexto||0);
  if(!Number.isSafeInteger(cantidadMaleta)||cantidadMaleta<0){errorProducto('La cantidad en la maleta debe ser un entero igual o mayor que cero.','cantidadMaleta');return;}
  if(cantidadMaleta>cantidad){errorProducto('La cantidad en la maleta no puede superar la cantidad total.','cantidadMaleta');return;}
