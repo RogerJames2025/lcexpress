@@ -1018,7 +1018,7 @@ async function guardarProducto(e){
    }
    if(cantidadMaleta>0){
     // Metadatos de maleta después de confirmar el ajuste oficial.
-    await putStore('productos',{...p,cantidad:0,cantidadMaleta});
+    const {error:metaError}=await window.LC_SUPABASE.from('productos').select('id').eq('id',id).single().then(async result=>result.error?result:await window.LC_SUPABASE.rpc('lc_producto_metadata34',{p_id:id,p_datos:{codigo:p.codigo,descripcion:p.descripcion,categoria:p.categoria,precio:p.precio,precio_decimales:p.precioDecimales,caja:p.caja,maleta:p.maleta,cantidad_maleta:cantidadMaleta,notas:p.notas}}));if(metaError)throw metaError;
    }
   }else{
    // La edición de metadatos no puede alterar existencias.
