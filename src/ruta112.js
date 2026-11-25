@@ -26,7 +26,27 @@ if(pending.length){const f=node('form');btn(f,'Sincronizar operaciones pendiente
 if(r?.estado==='CIERRE_PENDIENTE'){host.append(node('p','Cierre guardado localmente. Sincronice antes de iniciar otra ruta.'));return;}
 if(!r){const f=node('form');f.className='lc111-form';const name=field(f,'Nombre de la ruta');const type=select(f,'¿La ruta se realizará en vehículo?',[['NO','No'],['SI','Sí']]);const group=node('div');f.append(group);const vehicle=select(group,'Vehículo',[['','Seleccione'],...data.vehiculos.map(v=>[v.id,v.placa+' · '+v.descripcion])]);const km=field(group,'Kilometraje real inicial','number');km.min='0';km.step='0.1';const info=node('p');group.append(info);const reason=select(group,'Motivo de kilómetros entre rutas',[['NO_CLASIFICADO','No clasificado'],['PERSONAL','Uso personal'],['ADMINISTRATIVO','Uso administrativo'],['MANTENIMIENTO','Mantenimiento'],['OTRO','Otro']]);const notes=field(group,'Observaciones del kilometraje');notes.required=false;notes.maxLength=500;function update(reset=false){const v=data.vehiculos.find(x=>x.id===vehicle.value);group.hidden=type.value!=='SI';vehicle.required=km.required=!group.hidden;vehicle.disabled=km.disabled=reason.disabled=notes.disabled=group.hidden;if(v&&reset){km.value=v.km;km.min=v.km;}const diff=v?Number(km.value)-Number(v.km):0;info.textContent=v?'Último odómetro: '+v.km+' km · Diferencia: '+diff+' km':'Seleccione un vehículo disponible';reason.parentElement.hidden=notes.parentElement.hidden=!(diff>0);notes.required=!group.hidden&&diff>0&&reason.value==='OTRO';}type.onchange=()=>update(true);vehicle.onchange=()=>update(true);km.oninput=reason.onchange=()=>update();update();btn(f,'Confirmar inicio de ruta');f.onsubmit=e=>{e.preventDefault();if(ctx.inventario()){status.textContent='Finalice la toma física primero.';return;}void send('ABRIR',{nombre:name.value.trim().toUpperCase(),vehiculo:type.value==='SI'?vehicle.value:null,km:type.value==='SI'?km.value:null,motivo_km:reason.value,notas_km:notes.value});};host.append(f);return;}
 host.append(node('h3',r.nombre+' · '+r.codigo),node('p','Gastos registrados: $'+Number(r.gastos||0).toFixed(2)));const g=node('form');g.className='lc111-form';const cat=select(g,'Categoría',[['COMBUSTIBLE','Combustible'],['VIATICOS','Viáticos / alimentación'],['PEAJES','Peajes'],['OTROS','Otros']]);const amount=field(g,'Importe ($)','number');amount.min='0.01';amount.step='0.01';const concept=field(g,'Concepto');concept.maxLength=500;btn(g,'Registrar gasto en esta ruta');g.onsubmit=e=>{e.preventDefault();void send('GASTO',{ruta:r.id,categoria:cat.value,monto:amount.value,notas:concept.value});};host.append(g);const f=node('form');f.className='lc111-form';let km;if(r.vehiculo){km=field(f,'Kilometraje final real','number');km.min=r.km_inicio;km.step='0.1';const dist=node('p','Inicio: '+r.km_inicio+' km');f.append(dist);km.oninput=()=>dist.textContent='Distancia: '+(Number(km.value)-Number(r.km_inicio))+' km';}btn(f,'Confirmar cierre de ruta','red');f.onsubmit=e=>{e.preventDefault();void send('CERRAR',{ruta:r.id,km:km?.value??null});};host.append(f);}
-await render();}
+await render();
+// Consultar cambios oficiales mientras el formulario esté visible, sin cerrar el diálogo
+// ni reemplazar campos que el usuario esté editando.
+let ultimaFirmaRuta112=null,consultaRutaBusy112=false;
+const actualizarRutaVisible112=async()=>{
+ if(consultaRutaBusy112||busy||!navigator.onLine||!host.isConnected||document.hidden)return;
+ if(host.contains(document.activeElement)&&/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))return;
+ consultaRutaBusy112=true;
+ try{
+  const remoto=await rpc('lc_ruta112_consultar');
+  const firma=JSON.stringify([remoto?.ruta?.id||null,remoto?.ruta?.estado||null,remoto?.ruta?.fin||null,remoto?.ruta?.actualizado||null]);
+  if(ultimaFirmaRuta112===null){ultimaFirmaRuta112=firma;return;}
+  if(firma!==ultimaFirmaRuta112){ultimaFirmaRuta112=firma;await render();window.dispatchEvent(new CustomEvent('lcexpress-ruta-sincronizada',{detail:{actor:ctx.actor,origen:'servidor'}}));}
+ }catch(e){console.warn('Consulta de ruta oficial',e)}
+ finally{consultaRutaBusy112=false;}
+};
+const intervaloRuta112=setInterval(()=>{
+ if(!host.isConnected){clearInterval(intervaloRuta112);return;}
+ void actualizarRutaVisible112();
+},12000);
+}
 // Sincronización automática de operaciones de ruta: sin intervención manual.
 // Conserva los conflictos para revisión y nunca elimina operaciones de la cola.
 let rutaAutoSyncBusy112=false;
