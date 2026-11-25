@@ -830,7 +830,7 @@ async function refrescarUIDesdePowerSync(){
     try{perfilesVendedores=await getAllStore('perfiles')}catch{}
     llenarFiltros();actualizarCatalogosProducto();renderProductos();actualizarRutaBar();actualizarRutasSugeridas();
     if(dialogoAbierto('clientsDlg'))renderClientes();
-    if(dialogoAbierto('routesHistoryDlg'))renderHistorialRutas();
+    // El historial de rutas conserva su vista mientras está abierto; la consulta se ejecuta al abrir o buscar.
     if(dialogoAbierto('ordersHistoryDlg'))renderHistorialPedidos();
     if(dialogoAbierto('clientPickDlg'))renderSelectorClientes();
     if(dialogoAbierto('inventoriesDlg'))renderInventarios();
@@ -1168,12 +1168,16 @@ let routeHistoryRequestSeq=0;
 async function renderHistorialRutas(){
  const seq=++routeHistoryRequestSeq,tbody=$('routeHistoryRows'),q=norm($('routeHistorySearch').value);
  tbody.innerHTML='<tr><td colspan="8" class="empty">Consultando historial de rutas…</td></tr>';
- let oficiales=[],errorOficial='';
+ let oficiales=[],pedidosOficiales=[],errorOficial='';
  if(navigator.onLine&&sb){
   try{
    const res=await sb.from('rutas').select('id,codigo,nombre,estado,inicio,fin').is('eliminado_en',null).order('inicio',{ascending:false}).limit(1000);
    if(res.error)throw res.error;
    oficiales=res.data||[];
+   // Los pedidos oficiales permiten mostrar totales aun cuando la ruta no esté en el almacenamiento local.
+   const ord=await sb.from('pedidos').select('id,ruta_id,cliente_id,total,estado').order('fecha',{ascending:false}).limit(1000);
+   if(ord.error)console.warn('Totales de rutas no disponibles',ord.error);
+   else pedidosOficiales=ord.data||[];
   }catch(e){errorOficial=e?.message||String(e);}
  }else errorOficial='Sin conexión al servidor. Se muestran las rutas guardadas en este dispositivo.';
  if(seq!==routeHistoryRequestSeq)return;
@@ -1185,9 +1189,12 @@ async function renderHistorialRutas(){
  const list=[...porId.values()].filter(r=>!q||[r.codigo,r.nombre,r.inicio,r.fin].some(x=>norm(x||'').includes(q))).sort((a,b)=>new Date(b.inicio||0)-new Date(a.inicio||0));
  tbody.innerHTML=list.length?list.map(r=>{
   const ps=pedidos.filter(p=>p.rutaId===r.id&&!pedidoAnulado(p));
-  const local=!!r._local,tot=ps.reduce((a,p)=>a+Number(p.total||0),0);
+  const local=!!r._local;
+  const oficialesRuta=pedidosOficiales.filter(p=>String(p.ruta_id)===String(r.id)&&String(p.estado||'ACTIVO').toUpperCase()!=='ANULADO');
+  const resumen=oficialesRuta.length?oficialesRuta:ps.map(p=>({cliente_id:p.clienteId,total:p.total}));
+  const tot=resumen.reduce((a,p)=>a+Number(p.total||0),0);
   const acciones=local?`<button class="rowbtn" onclick="cerrarDlg('routeCalendarDlg');verRuta('${esc(r.id)}')" title="Ver detalle local">👁️</button><button class="rowbtn" onclick="pdfRuta('${esc(r.id)}')" title="PDF local">📄</button>`:'<small title="La ruta consta en el servidor, pero su detalle local no está descargado">Registro oficial</small>';
-  return `<tr><td><b>${esc(r.nombre||'—')}</b><br><small>${esc(r.codigo||'—')}</small>${r._oficial?'<br><small style="color:#047857">✓ Servidor</small>':''}</td><td>${r.inicio?dateText(r.inicio):'—'}</td><td>${r.fin?dateText(r.fin):'—'}</td><td>${local?ps.length:'—'}</td><td>${local?new Set(ps.map(p=>p.clienteId)).size:'—'}</td><td>${local?money(tot):'—'}</td><td><span class="tag ${r.estado==='ABIERTA'?'green':'gray'}">${esc(r.estado||'—')}</span></td><td>${acciones}</td></tr>`;
+  return `<tr><td><b>${esc(r.nombre||'—')}</b><br><small>${esc(r.codigo||'—')}</small>${r._oficial?'<br><small style="color:#047857">✓ Servidor</small>':''}</td><td>${r.inicio?dateText(r.inicio):'—'}</td><td>${r.fin?dateText(r.fin):'—'}</td><td>${resumen.length||local?resumen.length:'—'}</td><td>${resumen.length||local?new Set(resumen.map(p=>p.cliente_id)).size:'—'}</td><td>${resumen.length||local?money(tot):'—'}</td><td><span class="tag ${r.estado==='ABIERTA'?'green':'gray'}">${esc(r.estado||'—')}</span></td><td>${acciones}</td></tr>`;
  }).join(''):'<tr><td colspan="8" class="empty">No hay rutas para esta búsqueda.</td></tr>';
  if(errorOficial){tbody.insertAdjacentHTML('afterbegin',`<tr><td colspan="8" class="hint" style="color:#92400e">No se pudo consultar el historial oficial: ${esc(errorOficial)}. Los registros locales se conservan.</td></tr>`);}
 }
