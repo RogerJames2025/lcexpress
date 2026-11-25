@@ -2,6 +2,7 @@ import {recuperarConfirmacion112} from './confirmacion112.js';
 import { evidenciaRuta112, descargarEvidenciaRuta112 } from './ruta-revision112.js';
 import {rutaLocalActiva} from './ruta-dependencias112.js';
 import { colaRuta } from "./ruta-cola112.js";
+import { sincronizarRutaPedidos } from './lab18.js';
 import { consultarCatalogoRuta } from "./ruta-catalogo112.js";
 // Interfaz de ruta: operaciones oficiales, reintento con UUID persistente.
 const node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
@@ -10,12 +11,7 @@ function select(form,label,options){const l=node('label',label),s=node('select')
 function btn(form,label,cls='green'){const b=node('button',label);b.type='submit';b.className='btn '+cls;form.append(b);return b}
 async function rpc(name,args={}){if(!navigator.onLine)throw Error('Conexión requerida para confirmar esta operación.');const {data,error}=await window.LC_SUPABASE.rpc(name,args);if(error)throw Error(error.message);return data}
 // Un solo procesador por actor, compartido por botones, ventas y sincronización automática.
-window.LCSyncRutaPedidos112=async function(actor){
- if(!actor)throw Error('Sesión requerida para sincronizar ruta');
- const cola=colaRuta(actor);
- await cola.send();
- return cola.rows();
-};
+window.LCSyncRutaPedidos112=sincronizarRutaPedidos;
 async function abrir(host,ctx){if(!ctx.actor)throw Error('Sesión requerida');const key='lcexpress_ruta112_op_'+ctx.actor;let busy=false;const status=node('p');status.className='hint';
 const q=colaRuta(ctx.actor);
 async function render(){host.replaceChildren(status);const data=await consultarCatalogoRuta(ctx.actor,window.LCCloud?.db,()=>rpc('lc_ruta112_consultar'));const rows=await q.rows();const pending=rows.filter(x=>x.estado!=='CONFIRMADO');let r=data.ruta;
