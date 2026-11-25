@@ -1193,10 +1193,49 @@ async function renderHistorialRutas(){
   const oficialesRuta=pedidosOficiales.filter(p=>String(p.ruta_id)===String(r.id)&&String(p.estado||'ACTIVO').toUpperCase()!=='ANULADO');
   const resumen=oficialesRuta.length?oficialesRuta:ps.map(p=>({cliente_id:p.clienteId,total:p.total}));
   const tot=resumen.reduce((a,p)=>a+Number(p.total||0),0);
-  const acciones=local?`<button class="rowbtn" onclick="cerrarDlg('routeCalendarDlg');verRuta('${esc(r.id)}')" title="Ver detalle local">👁️</button><button class="rowbtn" onclick="pdfRuta('${esc(r.id)}')" title="PDF local">📄</button>`:'<small title="La ruta consta en el servidor, pero su detalle local no está descargado">Registro oficial</small>';
+  const acciones=local?`<button class="rowbtn" onclick="cerrarDlg('routeCalendarDlg');verRuta('${esc(r.id)}')" title="Consultar ruta">👁️</button><button class="rowbtn" onclick="pdfRuta('${esc(r.id)}')" title="Descargar PDF">📄</button>`:`<button class="rowbtn" onclick="consultarRutaOficial('${esc(r.id)}',false)" title="Consultar ruta del servidor">👁️</button><button class="rowbtn" onclick="consultarRutaOficial('${esc(r.id)}',true)" title="Descargar PDF de ruta del servidor">📄</button>`;
   return `<tr><td><b>${esc(r.nombre||'—')}</b><br><small>${esc(r.codigo||'—')}</small>${r._oficial?'<br><small style="color:#047857">✓ Servidor</small>':''}</td><td>${r.inicio?dateText(r.inicio):'—'}</td><td>${r.fin?dateText(r.fin):'—'}</td><td>${resumen.length||local?resumen.length:'—'}</td><td>${resumen.length||local?new Set(resumen.map(p=>p.cliente_id)).size:'—'}</td><td>${resumen.length||local?money(tot):'—'}</td><td><span class="tag ${r.estado==='ABIERTA'?'green':'gray'}">${esc(r.estado||'—')}</span></td><td>${acciones}</td></tr>`;
  }).join(''):'<tr><td colspan="8" class="empty">No hay rutas para esta búsqueda.</td></tr>';
  if(errorOficial){tbody.insertAdjacentHTML('afterbegin',`<tr><td colspan="8" class="hint" style="color:#92400e">No se pudo consultar el historial oficial: ${esc(errorOficial)}. Los registros locales se conservan.</td></tr>`);}
+}
+// Las rutas sin copia local se consultan directamente en el servidor; nunca se alteran registros.
+async function consultarRutaOficial(id,descargar=false){
+ try{
+  if(!navigator.onLine||!sb)throw new Error('Se necesita conexión para consultar esta ruta oficial.');
+  const [rr,pr]=await Promise.all([
+   sb.from('rutas').select('id,codigo,nombre,estado,inicio,fin').eq('id',id).single(),
+   sb.from('pedidos').select('*').eq('ruta_id',id).limit(1000)
+  ]);
+  if(rr.error)throw rr.error;if(pr.error)throw pr.error;
+  const r=rr.data,ps=(pr.data||[]).filter(p=>String(p.estado||'ACTIVO').toUpperCase()!=='ANULADO');
+  const clienteIds=[...new Set(ps.map(p=>p.cliente_id).filter(Boolean))];
+  let nombres=new Map();
+  if(clienteIds.length){
+   const cr=await sb.from('clientes').select('*').in('id',clienteIds.slice(0,1000));
+   if(!cr.error)for(const c of cr.data||[])nombres.set(String(c.id),c);
+  }
+  const registros=ps.map(p=>{
+   const c=nombres.get(String(p.cliente_id))||{};
+   return {numero:p.numero||p.codigo||p.id,cliente:[c.nombre,c.apellido].filter(Boolean).join(' ')||p.cliente_nombre||'—',comercio:c.comercio||c.negocio||p.cliente_comercio||'—',total:Number(p.total||0),fecha:p.fecha||p.created_at||'',clienteId:p.cliente_id};
+  });
+  const total=registros.reduce((n,p)=>n+p.total,0);
+  const cab=['Pedido','Fecha','Cliente','Comercio','Total'];
+  const filas=registros.map(p=>[String(p.numero),p.fecha?dateText(p.fecha):'—',p.cliente,p.comercio,money(p.total)]);
+  if(descargar){
+   if(!window.jspdf?.jsPDF)throw new Error('El generador de PDF no está disponible.');
+   const doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'letter'});
+   doc.setFontSize(16);doc.text('LCexpress - Ruta '+String(r.codigo||r.nombre||''),12,15);
+   doc.setFontSize(9);doc.text('Inicio: '+dateText(r.inicio)+'  Cierre: '+(r.fin?dateText(r.fin):'ABIERTA')+'  Pedidos: '+registros.length+'  Clientes: '+clienteIds.length+'  Total: '+money(total),12,22);
+   doc.autoTable({startY:28,head:[cab],body:filas,styles:{fontSize:8},headStyles:{fillColor:[15,23,42]}});
+   doc.save('LCexpress_Ruta_'+String(r.codigo||id).replace(/[^a-zA-Z0-9_-]/g,'')+'.pdf');return;
+  }
+  $('routeDetailBody').innerHTML='<div class="customer-head"><div><small>Ruta</small><b>'+esc(r.nombre||'—')+' · '+esc(r.codigo||'—')+'</b></div><div><small>Inicio</small><b>'+dateText(r.inicio)+'</b></div><div><small>Cierre</small><b>'+(r.fin?dateText(r.fin):'ABIERTA')+'</b></div></div>'+
+   '<div class="kpis"><div class="kpi"><span>Pedidos</span><b>'+registros.length+'</b></div><div class="kpi"><span>Clientes atendidos</span><b>'+clienteIds.length+'</b></div><div class="kpi"><span>Total efectivo</span><b>'+money(total)+'</b></div></div>'+
+   '<div class="section-title">Clientes y pedidos · registro oficial del servidor</div><div class="scroll"><table><thead><tr>'+cab.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+
+   (filas.length?filas.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="5">Sin pedidos registrados.</td></tr>')+'</tbody></table></div>'+
+   '<div class="modalfoot"><button class="btn blue" onclick="consultarRutaOficial('+JSON.stringify(String(id))+',true)">📄 Descargar PDF</button></div>';
+  cerrarDlg('routeCalendarDlg');$('routeDetailDlg').showModal();
+ }catch(e){window.LCDialog.alert('No se pudo consultar la ruta oficial: '+(e.message||e));}
 }
 let routeCalendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 function claveDiaLocal(v){const d=v instanceof Date?v:new Date(v);if(Number.isNaN(d.getTime()))return'';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
