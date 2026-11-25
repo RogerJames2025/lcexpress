@@ -1164,7 +1164,33 @@ async function abrirRuta(){
 async function iniciarRuta(){return abrirRuta()}
 async function cerrarRutaActiva(){return abrirRuta()}
 function abrirHistorialRutas(){renderHistorialRutas();$('routesHistoryDlg').showModal()}
-function renderHistorialRutas(){const q=norm($('routeHistorySearch').value),list=rutas.filter(r=>!q||[r.codigo,r.nombre,r.inicio].some(x=>norm(x).includes(q))).sort((a,b)=>new Date(b.inicio)-new Date(a.inicio));$('routeHistoryRows').innerHTML=list.length?list.map(r=>{const ps=pedidos.filter(p=>p.rutaId===r.id&&!pedidoAnulado(p)),tot=ps.reduce((a,p)=>a+p.total,0);return `<tr><td><b>${esc(r.nombre)}</b><br><small>${esc(r.codigo)}</small></td><td>${dateText(r.inicio)}</td><td>${r.fin?dateText(r.fin):'—'}</td><td>${ps.length}</td><td>${new Set(ps.map(p=>p.clienteId)).size}</td><td>${money(tot)}</td><td><span class="tag ${r.estado==='ABIERTA'?'green':'gray'}">${r.estado}</span></td><td><button class="rowbtn" onclick="cerrarDlg('routeCalendarDlg');verRuta('${r.id}')">👁️</button><button class="rowbtn" onclick="pdfRuta('${r.id}')">📄</button></td></tr>`}).join(''):`<tr><td colspan="8" class="empty">No hay rutas.</td></tr>`}
+let routeHistoryRequestSeq=0;
+async function renderHistorialRutas(){
+ const seq=++routeHistoryRequestSeq,tbody=$('routeHistoryRows'),q=norm($('routeHistorySearch').value);
+ tbody.innerHTML='<tr><td colspan="8" class="empty">Consultando historial de rutas…</td></tr>';
+ let oficiales=[],errorOficial='';
+ if(navigator.onLine&&sb){
+  try{
+   const res=await sb.from('rutas').select('id,codigo,nombre,estado,inicio,fin').is('eliminado_en',null).order('inicio',{ascending:false}).limit(1000);
+   if(res.error)throw res.error;
+   oficiales=res.data||[];
+  }catch(e){errorOficial=e?.message||String(e);}
+ }else errorOficial='Sin conexión al servidor. Se muestran las rutas guardadas en este dispositivo.';
+ if(seq!==routeHistoryRequestSeq)return;
+ const porId=new Map((rutas||[]).map(r=>[String(r.id),{...r,_local:true}]));
+ for(const oficial of oficiales){
+  const id=String(oficial.id),local=porId.get(id);
+  porId.set(id,{...local,...oficial,_local:!!local,_oficial:true});
+ }
+ const list=[...porId.values()].filter(r=>!q||[r.codigo,r.nombre,r.inicio,r.fin].some(x=>norm(x||'').includes(q))).sort((a,b)=>new Date(b.inicio||0)-new Date(a.inicio||0));
+ tbody.innerHTML=list.length?list.map(r=>{
+  const ps=pedidos.filter(p=>p.rutaId===r.id&&!pedidoAnulado(p));
+  const local=!!r._local,tot=ps.reduce((a,p)=>a+Number(p.total||0),0);
+  const acciones=local?`<button class="rowbtn" onclick="cerrarDlg('routeCalendarDlg');verRuta('${esc(r.id)}')" title="Ver detalle local">👁️</button><button class="rowbtn" onclick="pdfRuta('${esc(r.id)}')" title="PDF local">📄</button>`:'<small title="La ruta consta en el servidor, pero su detalle local no está descargado">Registro oficial</small>';
+  return `<tr><td><b>${esc(r.nombre||'—')}</b><br><small>${esc(r.codigo||'—')}</small>${r._oficial?'<br><small style="color:#047857">✓ Servidor</small>':''}</td><td>${r.inicio?dateText(r.inicio):'—'}</td><td>${r.fin?dateText(r.fin):'—'}</td><td>${local?ps.length:'—'}</td><td>${local?new Set(ps.map(p=>p.clienteId)).size:'—'}</td><td>${local?money(tot):'—'}</td><td><span class="tag ${r.estado==='ABIERTA'?'green':'gray'}">${esc(r.estado||'—')}</span></td><td>${acciones}</td></tr>`;
+ }).join(''):'<tr><td colspan="8" class="empty">No hay rutas para esta búsqueda.</td></tr>';
+ if(errorOficial){tbody.insertAdjacentHTML('afterbegin',`<tr><td colspan="8" class="hint" style="color:#92400e">No se pudo consultar el historial oficial: ${esc(errorOficial)}. Los registros locales se conservan.</td></tr>`);}
+}
 let routeCalendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 function claveDiaLocal(v){const d=v instanceof Date?v:new Date(v);if(Number.isNaN(d.getTime()))return'';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function diferenciaDiasClaves(a,b){const [ya,ma,da]=a.split('-').map(Number),[yb,mb,db]=b.split('-').map(Number);return Math.round((Date.UTC(yb,mb-1,db)-Date.UTC(ya,ma-1,da))/86400000)}
